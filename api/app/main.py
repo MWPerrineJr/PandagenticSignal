@@ -1,12 +1,10 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import Limiter
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
 
 from app.errors import RateLimitedError, TickerNotFoundError, UpstreamError
-from app.logging_config import access_log_middleware, client_ip, configure_logging
+from app.logging_config import access_log_middleware, configure_logging
+from app.ratelimit import RateLimiter
 from app.routers import history, quotes, recommendations, search
 from app.settings import Settings, get_settings
 
@@ -16,15 +14,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(settings)
     app = FastAPI(title="Stock Analysis API", version="0.2.0")
 
-    limiter = Limiter(
-        key_func=client_ip,
-        default_limits=[settings.rate_limit],
-        enabled=settings.rate_limit_enabled,
-        headers_enabled=True,
-    )
+    limiter = RateLimiter(settings.rate_limit, enabled=settings.rate_limit_enabled)
     app.state.limiter = limiter
 
-    app.add_middleware(SlowAPIMiddleware)
+    # Order matters: Starlette wraps in reverse, so CORS is outermost, then logging, then limits.
+    app.middleware("http")(limiter.middleware)
     app.middleware("http")(access_log_middleware)
     app.add_middleware(
         CORSMiddleware,
@@ -33,14 +27,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
         max_age=600,
     )
-
-    @app.exception_handler(RateLimitExceeded)
-    def _too_many(_: Request, exc: RateLimitExceeded) -> JSONResponse:
-        return JSONResponse(
-            status_code=429,
-            content={"detail": f"Rate limit exceeded: {exc.detail}"},
-            headers={"Retry-After": "60"},
-        )
 
     @app.exception_handler(TickerNotFoundError)
     def _not_found(_: Request, exc: TickerNotFoundError) -> JSONResponse:
@@ -57,7 +43,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(status_code=502, content={"detail": str(exc)})
 
     @app.get("/health", tags=["meta"])
-    @limiter.exempt
     def health() -> dict[str, str]:
         return {"status": "ok"}
 

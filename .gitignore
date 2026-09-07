@@ -24,6 +24,10 @@ htmlcov/
 .env.*
 !.env.example
 
+# Playwright
+test-results/
+playwright-report/
+
 # Supabase local
 supabase/.temp
 supabase/.branches

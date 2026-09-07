@@ -7,11 +7,11 @@ requires-python = ">=3.12"
 dependencies = [
     "cachetools>=7.1.8",
     "fastapi>=0.141.1",
+    "limits>=5.8.0",
     "numpy>=2.5.3",
     "pandas>=3.0.5",
     "pydantic-settings>=2.15.0",
     "scipy>=1.18.1",
-    "slowapi>=0.1.10",
     "uvicorn[standard]>=0.52.4",
     "yfinance>=1.7.0",
 ]
