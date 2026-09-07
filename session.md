@@ -10,19 +10,41 @@ Last updated: 2026-09-06
    - Data layer: **Python-first, Lovable later.** FastAPI + yfinance service in `api/`, React frontend at the repo root in Lovable's exact stack, import into Lovable via GitHub once the API is stable.
    - Persistence: **Supabase with user accounts** for watchlists and dashboard layouts.
 4. **Plan approved.** Eight phases (0–7) with a test checkpoint at the end of each. Full plan: `~/.claude/plans/elegant-imagining-mitten.md`.
-5. **Phase 0 complete.** Repo initialised, frontend and API scaffolded, shadcn installed, pre-commit + CI + README written, both test suites, typecheck and build verified green. Fixes along the way: removed deprecated `baseUrl` for TypeScript 6, switched Vite config to `import.meta.dirname`, removed Vite scaffold assets.
+5. **Phase 0 started.** Repo initialised, frontend and API scaffolded, test tooling and CI written. User paused work to review progress; `session.md` created.
+6. **GitHub check.** User asked whether GitHub login is needed. Answer: no, `gh` is already authenticated (account MWPerrineJr, `repo` + `workflow` scopes). Nothing is pushed yet; git identity for commits is the yahoo address, changeable per repo on request.
+7. **Checkpoint commit `b71a2fd`** made at the user's request as a revert point (38 files, lockfiles included, no `node_modules`/`.venv`/`.env`).
+8. **Phase 0 finished, commit `6c27385`.** shadcn/ui init (Base UI, Geist font, theme tokens, Button, `cn`), pre-commit config, README, vitest coverage provider. Fixes: dropped deprecated tsconfig `baseUrl` (TypeScript 6 error), `__dirname` → `import.meta.dirname` in `vite.config.ts`, page title set, Vite scaffold assets removed. All checks green.
+9. **session.md refreshed** (this update).
 
 ## Repository state
 
 ```
-stock-tool/
-  index.html  vite.config.ts  tsconfig*.json  package.json  .env.example  .gitignore
-  src/  App.tsx  App.test.tsx  main.tsx  index.css  test/{setup,server,handlers}.ts
-  api/  pyproject.toml  .env.example  app/{__init__,main,settings}.py  tests/{conftest.py,unit/test_health.py,integration/}
+stock-tool/                                   git main @ 6c27385 (revert point: b71a2fd)
+  README.md  session.md  .pre-commit-config.yaml  .env.example  .gitignore
+  index.html  vite.config.ts  tsconfig{,.app,.node}.json  package.json  components.json
+  public/favicon.svg
+  src/
+    App.tsx  App.test.tsx  main.tsx  index.css
+    components/ui/button.tsx
+    lib/utils.ts
+    test/{setup,server,handlers}.ts
+  api/
+    pyproject.toml  uv.lock  .python-version  .env.example  README.md
+    app/{__init__,main,settings}.py
+    tests/{conftest.py,unit/test_health.py,integration/}
   .github/workflows/ci.yml
 ```
 
-Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, pandas 3.0.5.
+Untracked oddity: an empty `src/precommit/` folder exists on disk (not created by this session, invisible to git). Safe to delete.
+
+Commits:
+
+| Hash | Purpose |
+|---|---|
+| `b71a2fd` | Phase 0 scaffold, requested as a revert point |
+| `6c27385` | Phase 0 closed: shadcn, pre-commit, README, checks green |
+
+Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base UI), vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, pandas 3.0.5. GitHub CLI authenticated; no remote configured yet.
 
 ## Phase checklist
 
@@ -44,7 +66,7 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, vitest 5, MSW
 - [x] `.pre-commit-config.yaml`
 - [x] `README.md`
 - [x] **Test checkpoint:** ruff clean, pytest 1/1 with 100% coverage; oxlint clean (1 shadcn warning), tsc clean, vitest 1/1, vite build OK
-- [x] Initial git commit `b71a2fd`; Phase 0 closed in the following commit
+- [x] Commits: `b71a2fd` (scaffold / revert point), `6c27385` (Phase 0 closed)
 
 ### Phase 1 — Data API (FastAPI + yfinance)
 - [ ] `services/cache.py` TTL cache
@@ -99,5 +121,8 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, vitest 5, MSW
 
 ## Next actions
 
-1. Start Phase 1: cache, market_data wrapper, indicator and level services with fixture-based unit tests, then the routers.
-2. Optional: `pip install pre-commit && pre-commit install` to enable the per-commit hooks locally.
+1. **Phase 1** — build in this order so each layer is tested before the next depends on it:
+   `services/cache.py` → `services/indicators.py` + `services/levels.py` (pure pandas, fixture tests) → `services/market_data.py` (yfinance wrapper, mocked in tests) → routers → integration tests.
+2. Optional now: `pip install pre-commit && pre-commit install` for local per-commit hooks.
+3. Optional now: create the GitHub remote and push so CI runs on every commit (`gh repo create`), otherwise deferred to Phase 7.
+4. Delete the empty `src/precommit/` folder if it was accidental.
