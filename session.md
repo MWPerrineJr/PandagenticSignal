@@ -73,7 +73,7 @@ Commits:
 | `aa8bebd` | Phase 1 closed: data API |
 | `b9214ab` | Phase 2 closed: frontend foundation and ticker search |
 | `f3f0b3f` | Phase 3 closed: Charts tab |
-| (next) | Phase 4 closed: watchlist, compare mode, Analysts tab |
+| `1c7e736` | Phase 4 closed: watchlist, compare mode, Analysts tab |
 
 Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base UI), vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, pandas 3.0.5. GitHub CLI authenticated; no remote configured yet.
 
