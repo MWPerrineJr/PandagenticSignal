@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query'
 import { ApiError, api, normaliseSymbol, type Interval, type Period } from './api'
 
 const MINUTE = 60_000
@@ -79,5 +79,17 @@ export function useRecommendations(symbol: string | null | undefined) {
     queryFn: ({ signal }) => api.recommendations(symbol!, { signal }),
     enabled: Boolean(symbol),
     staleTime: HOUR,
+  })
+}
+
+/** One history query per symbol (compare mode). Order of results matches `symbols`. */
+export function useHistories(symbols: string[], period: Period = '1y', interval: Interval = '1d') {
+  return useQueries({
+    queries: symbols.map((symbol) => ({
+      queryKey: queryKeys.history(symbol, period, interval),
+      queryFn: ({ signal }: { signal: AbortSignal }) => api.history(symbol, period, interval, { signal }),
+      staleTime: 5 * MINUTE,
+      placeholderData: keepPreviousData,
+    })),
   })
 }

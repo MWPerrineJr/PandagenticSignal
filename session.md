@@ -21,7 +21,9 @@ Last updated: 2026-09-07
 13. **Phase 2 checkpoint.** tsc clean, oxlint clean (only the shadcn fast-refresh warnings), vitest 38/38, coverage 90% on `src/lib` + `src/features`, vite build OK. Verified in Chrome against the live API: dashboard quote for AAPL, search "nv" → Enter selects NVDA and updates URL + quote, Track → Watchlist shows NVDA, theme toggle works, no console errors.
 14. **Phase 2 combobox bug found only in the browser, fixed.** cmdk keeps its highlighted value from the previous result set, so after typing "n" (highlight NSAIR) then "v", nothing was highlighted and Enter did nothing. Fix: the highlight is derived per result set (first result by default, arrow keys override) and the component owns the Enter key. Tests added for the two-query sequence and arrow-key selection.
 15. **Phase 3 built (2026-09-07).** `lightweight-charts` 5.2.1 (v5 API: `addSeries(CandlestickSeries | LineSeries | HistogramSeries)`, `createPriceLine`, `subscribeCrosshairMove`). Pure mapping layer `src/lib/chart-data.ts` (type-only import of `Time`), URL-backed `useChartParams` (`period`, `interval`, `ov`), theme palettes, `PriceChart` (candles + volume pane + EMA lines + Bollinger dashed lines + S/R price lines labelled `S ×n`/`R ×n` + crosshair legend), `ChartControls` (period/interval radiogroups, overlay toggle buttons), `ChartsPage` wired to `useIndicators`. Charts route is lazy-loaded so the chart library lives in its own chunk (179 kB, main bundle unchanged).
-16. **Phase 3 checkpoint.** tsc + oxlint clean, vitest 64/64, coverage 95% (`src/lib` + `src/features`), build OK without the chunk-size warning. Verified in Chrome against the live API: AAPL 1Y daily renders all overlays; hovering updates the legend OHLC/EMA/BB values; toggling Bollinger removes the three lines; 6M + Weekly refetches and the URL carries `period`, `interval`, `ov`; light theme restyles the chart; no console errors.
+16. **Phase 3 checkpoint (see below).** tsc + oxlint clean, vitest 64/64, coverage 95% (`src/lib` + `src/features`), build OK without the chunk-size warning. Verified in Chrome against the live API: AAPL 1Y daily renders all overlays; hovering updates the legend OHLC/EMA/BB values; toggling Bollinger removes the three lines; 6M + Weekly refetches and the URL carries `period`, `interval`, `ov`; light theme restyles the chart; no console errors.
+17. **Phase 4 built (2026-09-07).** Loaded the `dataviz` skill first and validated colours with its palette checker: five categorical slots for compare mode (both modes pass), two-step blue and red arms for the diverging rating bar (ordinal checks pass; light red step re-picked at `#ee9291` because `#f2a09f` failed the 2:1 light-end floor). Values live in `src/lib/viz-palette.ts`. Watchlist tab: quote table over `/quotes` (price, change, volume, market cap, 1-month sparkline per row via `useHistory`), add via `TickerSearch`, move up/down, remove, row click opens Charts; store gained `move()`. Compare mode: `cmp` URL param (max 4 extra symbols), `useHistories` (`useQueries`), `normaliseSeries` rebases every series to 0% at the first *shared* bar, `CompareChart` (lightweight-charts line per symbol, % axis, zero baseline, legend follows crosshair), `ComparePicker` chips from tracked tickers plus a search box; overlays greyed out in compare mode. Analysts tab: consensus badge (weighted 5→1 mean, bucketed), KPI cards, diverging stacked bar per month centred on Hold (HTML segments, 2 px surface gaps, counts labelled only where they fit, hover tooltip, `<details>` table view), price-target track (low→high, mean/median dots, current-price tick, upside %), upgrades/downgrades table (direction icon + label, from → to, target change, show-all). API fix: Yahoo encodes missing price targets as 0 → now `null` (`_price`).
+18. **Phase 4 checkpoint.** API: ruff clean, pytest 60/60, 99%. Web: tsc + oxlint clean, vitest 93/93, coverage 95%, build OK. Verified in Chrome against the live API: Analysts AAPL (43 analysts, Hold 3.5/5, targets $215–$400, 50 grade changes), Watchlist add MSFT/AAPL via search with live rows and sparklines, compare AAPL vs MSFT vs NVDA over 6M with matching chip/line colours; no console errors.
 
 ## Repository state
 
@@ -38,11 +40,14 @@ stock-tool/                                   git main (revert points: b71a2fd, 
     components/ui/{button,input,badge,card,skeleton}.tsx
     features/search/ticker-search.tsx (+test)
     features/quote/quote-card.tsx
-    features/charts/{charts-page,price-chart,chart-controls}.tsx (+tests)
-    features/{dashboard,watchlist,analysts}/*-page.tsx
+    features/charts/{charts-page,price-chart,chart-controls,compare-chart,compare-picker}.tsx (+tests)
+    features/watchlist/{watchlist-page,sparkline}.tsx (+test)
+    features/analysts/{analysts-page,recommendation-bars,price-target-gauge,grade-table}.tsx (+test)
+    features/dashboard/dashboard-page.tsx
     features/empty-ticker.tsx
     lib/api.ts (zod schemas + fetchers)  lib/queries.ts (hooks)  lib/use-ticker.ts
     lib/chart-data.ts (API rows → series)  lib/use-chart-params.ts  lib/chart-theme.ts
+    lib/viz-palette.ts (validated colours)  lib/compare.ts  lib/analysts.ts
     lib/use-debounce.ts  lib/format.ts  lib/utils.ts  (+tests)
     stores/tickers.ts (+test)
     test/{setup,server,handlers,fixtures}.ts  test/render.tsx  test/chart-mock.ts
@@ -68,6 +73,7 @@ Commits:
 | `aa8bebd` | Phase 1 closed: data API |
 | `b9214ab` | Phase 2 closed: frontend foundation and ticker search |
 | `f3f0b3f` | Phase 3 closed: Charts tab |
+| (next) | Phase 4 closed: watchlist, compare mode, Analysts tab |
 
 Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base UI), vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, pandas 3.0.5. GitHub CLI authenticated; no remote configured yet.
 
@@ -119,10 +125,11 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] **Test checkpoint:** vitest 64/64 (mapping helpers, URL round-trip, chart component against a mocked chart lib, page with MSW), tsc + oxlint clean, build OK, live browser check
 
 ### Phase 4 — Multi-stock tracking and Analysts tab
-- [ ] Watchlist tab (localStorage until Phase 5)
-- [ ] Compare mode (normalised % change, up to 5 tickers)
-- [ ] Analysts tab: recommendation history chart, price-target gauge, upgrades/downgrades table
-- [ ] Test checkpoint
+- [x] Watchlist tab: live quote table, sparklines, add/remove/reorder (localStorage until Phase 5)
+- [x] Compare mode (normalised % change from first shared bar, up to 5 tickers, `cmp` URL param)
+- [x] Analysts tab: consensus badge, diverging rating bars with table view, price-target track, upgrades/downgrades table, no-coverage state
+- [x] Colours validated with the dataviz palette checker
+- [x] **Test checkpoint:** vitest 93/93, pytest 60/60, tsc + oxlint + ruff clean, build OK, live browser check
 
 ### Phase 5 — Supabase auth and persistence
 - [ ] Supabase CLI + project, env vars
@@ -157,10 +164,12 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - Bollinger Bands are drawn as three lines, not a filled band; a fill needs a custom series primitive in lightweight-charts v5. Revisit if wanted.
 - Daily chart times are `yyyy-mm-dd` computed from the UTC timestamp shifted by +12 h, which is correct for exchange offsets in (−12 h, +12 h]. NZ/Kiribati summer time (+13/+14) would be off by a day; fix by emitting a local date from the API if it matters.
 - With short windows (e.g. 1M daily, 6M weekly) support/resistance has few extrema and mostly `×1` levels; the API's `order=5` could scale with bar count later.
+- Compare-mode colours follow list position (primary = slot 1, then `cmp` order). Removing a middle symbol repaints the ones after it; acceptable for ≤5 lines, but if it bothers users, pin a slot per symbol in the URL.
+- The consensus label uses a weighted mean bucketed at 4.5/3.5/2.5/1.5; AAPL's live mix (6/18/13/3/3) lands on Hold at 3.49, which surprises people who expect "Buy". Consider Yahoo's own `recommendationKey` from `Ticker.info` if that matters.
 - The combobox renders cmdk primitives directly with an absolutely positioned panel (no Base UI Popover) so focus and jsdom behave predictably.
 
 ## Next actions
 
-1. **Phase 4** — Multi-stock tracking and Analysts tab: Watchlist rows with live quotes via `useQuotes` (price, change, sparkline optional), compare mode (normalised % change lines for up to 5 tracked tickers, reuse `PriceChart` patterns with `LineSeries` or a small `CompareChart`), Analysts tab from `useRecommendations` (stacked bar of strong buy/buy/hold/sell/strong sell per month, price-target gauge low/mean/high vs current, upgrades/downgrades table). Load the `dataviz` skill before building the analyst charts. To run locally: `cd api && uv run uvicorn app.main:app --reload` and `npm run dev`.
+1. **Phase 5** — Supabase auth and persistence. The Supabase MCP connector is available in Claude Code (`mcp__claude_ai_Supabase__*`: list/create project, apply_migration, execute_sql, get_advisors); confirm with the user which organisation/project to use (or create one) before touching anything, since projects cost money. Then: `npm i @supabase/supabase-js`, `supabase/migrations/0001_init.sql` (profiles, watchlists, watchlist_items with position, dashboard_layouts jsonb, RLS policies per `auth.uid()`), auth UI (email magic link or password) + route guard, swap `useTickerStore` persistence for Supabase rows with a one-time localStorage import on first sign-in, keep the localStorage path for signed-out users. Tests: pgTAP for RLS, mocked Supabase client for hooks. To run locally: `cd api && uv run uvicorn app.main:app --reload` and `npm run dev`.
 2. Optional: move `api/app/stock-tool.code-workspace` to the repo root (adjust `path` to `.`).
 3. Optional: `pip install pre-commit && pre-commit install`; `gh repo create` and push so CI runs (otherwise Phase 7).

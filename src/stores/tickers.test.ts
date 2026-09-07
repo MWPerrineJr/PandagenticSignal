@@ -37,3 +37,23 @@ describe('ticker store', () => {
     expect(localStorage.getItem('stock-tool.tickers')).toContain('NVDA')
   })
 })
+
+describe('reorder', () => {
+  it('moves up and down and clamps at the ends', () => {
+    const s = useTickerStore.getState()
+    s.add('A')
+    s.add('B')
+    s.add('C')
+    s.move('C', -1)
+    expect(useTickerStore.getState().tickers).toEqual(['A', 'C', 'B'])
+    s.move('A', 1)
+    expect(useTickerStore.getState().tickers).toEqual(['C', 'A', 'B'])
+    s.move('C', -5)
+    expect(useTickerStore.getState().tickers).toEqual(['C', 'A', 'B'])
+    s.move('B', 9)
+    expect(useTickerStore.getState().tickers).toEqual(['C', 'A', 'B'])
+    s.move('ZZZ', 1)
+    s.move('A', 0)
+    expect(useTickerStore.getState().tickers).toEqual(['C', 'A', 'B'])
+  })
+})

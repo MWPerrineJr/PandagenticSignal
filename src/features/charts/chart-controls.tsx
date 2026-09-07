@@ -20,6 +20,8 @@ export interface ChartControlsProps {
   onPeriod: (p: ChartPeriod) => void
   onInterval: (i: ChartInterval) => void
   onToggleOverlay: (id: OverlayId) => void
+  /** Compare mode hides overlays; keep the state but grey the buttons. */
+  overlaysDisabled?: boolean
 }
 
 function Segmented<T extends string>({
@@ -56,14 +58,22 @@ function Segmented<T extends string>({
   )
 }
 
-export function ChartControls({ period, interval, overlays, onPeriod, onInterval, onToggleOverlay }: ChartControlsProps) {
+export function ChartControls({
+  period,
+  interval,
+  overlays,
+  onPeriod,
+  onInterval,
+  onToggleOverlay,
+  overlaysDisabled = false,
+}: ChartControlsProps) {
   const { theme } = useTheme()
   const palette = CHART_PALETTES[theme]
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Segmented label="Period" options={CHART_PERIODS} value={period} labels={PERIOD_LABELS} onChange={onPeriod} />
       <Segmented label="Interval" options={CHART_INTERVALS} value={interval} labels={INTERVAL_LABELS} onChange={onInterval} />
-      <div role="group" aria-label="Overlays" className="flex flex-wrap gap-1">
+      <div role="group" aria-label="Overlays" className={cn('flex flex-wrap gap-1', overlaysDisabled && 'opacity-50')}>
         {OVERLAY_IDS.map((id) => {
           const on = overlays.has(id)
           const span = emaSpanOf(id)
@@ -75,6 +85,7 @@ export function ChartControls({ period, interval, overlays, onPeriod, onInterval
               size="sm"
               variant={on ? 'secondary' : 'ghost'}
               aria-pressed={on}
+              disabled={overlaysDisabled}
               onClick={() => onToggleOverlay(id)}
               className={cn('h-7 gap-1.5 text-xs', !on && 'text-muted-foreground')}
             >

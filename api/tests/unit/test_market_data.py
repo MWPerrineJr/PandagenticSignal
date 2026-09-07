@@ -141,10 +141,13 @@ def test_recommendations_full(market_data: MarketData) -> None:
     assert rec["summary"][0].strong_buy == 6
     assert rec["price_targets"].mean == 225.5
     grades = rec["upgrades_downgrades"]
-    assert [g.firm for g in grades] == ["Morgan Stanley", "DA Davidson", "Rosenblatt"]
+    assert [g.firm for g in grades] == ["Morgan Stanley", "DA Davidson", "Rosenblatt", "Needham"]
     assert grades[0].date.startswith("2026-09-02T17:34:35")
     assert grades[2].price_target_action is None
     assert grades[2].current_price_target is None
+    # Yahoo encodes "no target" as 0.0; it must not surface as a $0 price.
+    assert grades[3].current_price_target is None
+    assert grades[3].prior_price_target is None
 
 
 def test_recommendations_partial_data(market_data: MarketData) -> None:

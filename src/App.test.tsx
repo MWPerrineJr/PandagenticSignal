@@ -15,12 +15,13 @@ describe('routing', () => {
   it.each([
     ['/', 'Dashboard'],
     ['/charts', 'Charts'],
-    ['/watchlist', 'Watchlist'],
+    ['/watchlist', /^Watchlist/],
     ['/analysts', 'Analysts'],
   ])('renders %s with the %s heading', async (route, heading) => {
     renderWithProviders(<AppRoutes />, { route })
     expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: heading })).toHaveAttribute('aria-current', 'page')
+    const linkName = typeof heading === 'string' ? heading : 'Watchlist'
+    expect(screen.getByRole('link', { name: linkName })).toHaveAttribute('aria-current', 'page')
   })
 
   it('redirects unknown paths to the dashboard', () => {
@@ -71,7 +72,7 @@ describe('ticker flow', () => {
     await user.click(await screen.findByRole('button', { name: 'Track AAPL' }))
     expect(screen.getByRole('button', { name: 'Untrack AAPL' })).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: 'Watchlist' }))
-    expect(screen.getByText('AAPL', { selector: '[data-slot=badge]' })).toBeInTheDocument()
+    expect(await screen.findByTestId('row-AAPL')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Remove AAPL' }))
     expect(screen.getByText(/nothing tracked yet/i)).toBeInTheDocument()
   })

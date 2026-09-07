@@ -38,6 +38,12 @@ def _num(value: Any) -> float | None:
     return f if math.isfinite(f) else None
 
 
+def _price(value: Any) -> float | None:
+    """Analyst price fields: Yahoo encodes "no target" as 0, which is never a real price."""
+    f = _num(value)
+    return f if f is not None and f > 0 else None
+
+
 def _int(value: Any) -> int | None:
     f = _num(value)
     return int(f) if f is not None else None
@@ -260,15 +266,15 @@ class MarketData:
                         from_grade=_str(row.get("FromGrade")),
                         action=_str(row.get("Action")),
                         price_target_action=_str(row.get("priceTargetAction")),
-                        current_price_target=_num(row.get("currentPriceTarget")),
-                        prior_price_target=_num(row.get("priorPriceTarget")),
+                        current_price_target=_price(row.get("currentPriceTarget")),
+                        prior_price_target=_price(row.get("priorPriceTarget")),
                     )
                 )
         return {
             "symbol": symbol,
             "summary": summary,
             "price_targets": PriceTargets(
-                **{k: _num(targets.get(k)) for k in PriceTargets.model_fields}
+                **{k: _price(targets.get(k)) for k in PriceTargets.model_fields}
             ),
             "upgrades_downgrades": grades,
         }

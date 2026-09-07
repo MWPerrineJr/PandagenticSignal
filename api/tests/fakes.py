@@ -74,16 +74,22 @@ RECOMMENDATIONS = pd.DataFrame(
 PRICE_TARGETS = {"current": 200.0, "high": 260.0, "low": 150.0, "mean": 225.5, "median": 230.0}
 UPGRADES = pd.DataFrame(
     {
-        "Firm": ["Morgan Stanley", "DA Davidson", "Rosenblatt"],
-        "ToGrade": ["Overweight", "Neutral", "Buy"],
-        "FromGrade": ["Overweight", "Buy", "Buy"],
-        "Action": ["main", "down", "main"],
-        "priceTargetAction": ["Raises", "Lowers", np.nan],
-        "currentPriceTarget": [370.0, 250.0, np.nan],
-        "priorPriceTarget": [360.0, 270.0, np.nan],
+        "Firm": ["Morgan Stanley", "DA Davidson", "Rosenblatt", "Needham"],
+        "ToGrade": ["Overweight", "Neutral", "Buy", "Hold"],
+        "FromGrade": ["Overweight", "Buy", "Buy", "Hold"],
+        "Action": ["main", "down", "main", "main"],
+        "priceTargetAction": ["Raises", "Lowers", np.nan, "Maintains"],
+        "currentPriceTarget": [370.0, 250.0, np.nan, 0.0],
+        "priorPriceTarget": [360.0, 270.0, np.nan, 0.0],
     },
     index=pd.DatetimeIndex(
-        ["2026-09-02 17:34:35", "2026-09-02 16:01:42", "2026-09-01 12:17:07"], name="GradeDate"
+        [
+            "2026-09-02 17:34:35",
+            "2026-09-02 16:01:42",
+            "2026-09-01 12:17:07",
+            "2026-08-30 09:00:00",
+        ],
+        name="GradeDate",
     ),
 )
 

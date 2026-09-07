@@ -1,7 +1,8 @@
 import { useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import type { Interval, Period } from './api'
+import { normaliseSymbol, type Interval, type Period } from './api'
 import { OVERLAY_IDS, isOverlayId, type OverlayId } from './chart-data'
+import { MAX_COMPARE } from './viz-palette'
 
 export const CHART_PERIODS = ['1mo', '3mo', '6mo', '1y', '2y', '5y'] as const satisfies readonly Period[]
 export const CHART_INTERVALS = ['1d', '1wk'] as const satisfies readonly Interval[]
@@ -22,13 +23,25 @@ export const DEFAULT_PERIOD: ChartPeriod = '1y'
 export const DEFAULT_INTERVAL: ChartInterval = '1d'
 export const DEFAULT_OVERLAYS: readonly OverlayId[] = OVERLAY_IDS
 
-const PARAM = { period: 'period', interval: 'interval', overlays: 'ov' } as const
+const PARAM = { period: 'period', interval: 'interval', overlays: 'ov', compare: 'cmp' } as const
 const NONE = 'none'
 
 export interface ChartParams {
   period: ChartPeriod
   interval: ChartInterval
   overlays: Set<OverlayId>
+  /** Extra symbols overlaid as normalised % change; non-empty means compare mode is on. */
+  compare: string[]
+}
+
+export function parseCompare(raw: string | null): string[] {
+  if (!raw) return []
+  const out: string[] = []
+  for (const part of raw.split(',')) {
+    const symbol = normaliseSymbol(part)
+    if (symbol && !out.includes(symbol)) out.push(symbol)
+  }
+  return out.slice(0, MAX_COMPARE - 1)
 }
 
 export function parseOverlays(raw: string | null): Set<OverlayId> {
@@ -52,12 +65,16 @@ export function useChartParams(): ChartParams & {
   setPeriod: (period: ChartPeriod) => void
   setInterval: (interval: ChartInterval) => void
   toggleOverlay: (id: OverlayId) => void
+  setCompare: (symbols: string[]) => void
+  toggleCompare: (symbol: string) => void
 } {
   const [params, setParams] = useSearchParams()
   const period = pick(params.get(PARAM.period), CHART_PERIODS, DEFAULT_PERIOD)
   const interval = pick(params.get(PARAM.interval), CHART_INTERVALS, DEFAULT_INTERVAL)
   const overlaysRaw = params.get(PARAM.overlays)
   const overlays = useMemo(() => parseOverlays(overlaysRaw), [overlaysRaw])
+  const compareRaw = params.get(PARAM.compare)
+  const compare = useMemo(() => parseCompare(compareRaw), [compareRaw])
 
   const update = useCallback(
     (key: string, value: string | null) => {
@@ -89,5 +106,20 @@ export function useChartParams(): ChartParams & {
     [overlays, update],
   )
 
-  return { period, interval, overlays, setPeriod, setInterval, toggleOverlay }
+  const setCompare = useCallback(
+    (symbols: string[]) => {
+      const clean = parseCompare(symbols.join(','))
+      update(PARAM.compare, clean.length ? clean.join(',') : null)
+    },
+    [update],
+  )
+  const toggleCompare = useCallback(
+    (symbol: string) => {
+      const clean = normaliseSymbol(symbol)
+      setCompare(compare.includes(clean) ? compare.filter((s) => s !== clean) : [...compare, clean])
+    },
+    [compare, setCompare],
+  )
+
+  return { period, interval, overlays, compare, setPeriod, setInterval, toggleOverlay, setCompare, toggleCompare }
 }

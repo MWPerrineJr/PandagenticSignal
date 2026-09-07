@@ -56,3 +56,23 @@ describe('useChartParams', () => {
     expect(serialiseOverlays(parseOverlays('sr,ema10'))).toBe('ema10,sr')
   })
 })
+
+describe('compare param', () => {
+  it('parses, dedupes, normalises and caps at four extra symbols', () => {
+    const { result } = setup('/charts?t=AAPL&cmp=msft,MSFT,nvda,googl,amzn,tsla')
+    expect(result.current.params.compare).toEqual(['MSFT', 'NVDA', 'GOOGL', 'AMZN'])
+  })
+
+  it('toggles and clears', () => {
+    const { result } = setup()
+    expect(result.current.params.compare).toEqual([])
+    act(() => result.current.params.toggleCompare('msft'))
+    expect(result.current.location.search).toBe('?t=AAPL&cmp=MSFT')
+    act(() => result.current.params.toggleCompare('NVDA'))
+    expect(result.current.params.compare).toEqual(['MSFT', 'NVDA'])
+    act(() => result.current.params.toggleCompare('MSFT'))
+    expect(result.current.params.compare).toEqual(['NVDA'])
+    act(() => result.current.params.setCompare([]))
+    expect(result.current.location.search).toBe('?t=AAPL')
+  })
+})

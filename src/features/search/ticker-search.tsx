@@ -11,6 +11,8 @@ export interface TickerSearchProps {
   value?: string | null
   onSelect: (symbol: string, result?: SearchResult) => void
   placeholder?: string
+  /** Accessible name; give each search box on a page a distinct one. */
+  label?: string
   className?: string
   autoFocus?: boolean
 }
@@ -20,7 +22,14 @@ export interface TickerSearchProps {
  * results are keyboard navigable (cmdk); Enter on a raw symbol with no results still
  * selects it so power users can type `NVDA⏎`.
  */
-export function TickerSearch({ value, onSelect, placeholder, className, autoFocus }: TickerSearchProps) {
+export function TickerSearch({
+  value,
+  onSelect,
+  placeholder,
+  label = 'Search symbol or company',
+  className,
+  autoFocus,
+}: TickerSearchProps) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const debounced = useDebounce(query, 250)
@@ -75,7 +84,7 @@ export function TickerSearch({ value, onSelect, placeholder, className, autoFocu
       loop
       value={highlighted}
       onValueChange={(value) => setHighlight({ results, value })}
-      label="Search symbol or company"
+      label={label}
       className={cn('relative', className)}
       onKeyDown={onKeyDown}
     >
@@ -93,7 +102,7 @@ export function TickerSearch({ value, onSelect, placeholder, className, autoFocu
           }}
           onFocus={() => setOpen(true)}
           placeholder={placeholder ?? (value ? `${value} · search another symbol` : 'Search symbol or company')}
-          aria-label="Search symbol or company"
+          aria-label={label}
           aria-expanded={showPanel}
           aria-controls={listId}
           autoFocus={autoFocus}
