@@ -1,6 +1,6 @@
 # Session Log — Stock Analysis Tool
 
-Last updated: 2026-09-06
+Last updated: 2026-09-07
 
 ## Conversation summary
 
@@ -14,12 +14,14 @@ Last updated: 2026-09-06
 6. **GitHub check.** User asked whether GitHub login is needed. Answer: no, `gh` is already authenticated (account MWPerrineJr, `repo` + `workflow` scopes). Nothing is pushed yet; git identity for commits is the yahoo address, changeable per repo on request.
 7. **Checkpoint commit `b71a2fd`** made at the user's request as a revert point (38 files, lockfiles included, no `node_modules`/`.venv`/`.env`).
 8. **Phase 0 finished, commit `6c27385`.** shadcn/ui init (Base UI, Geist font, theme tokens, Button, `cn`), pre-commit config, README, vitest coverage provider. Fixes: dropped deprecated tsconfig `baseUrl` (TypeScript 6 error), `__dirname` → `import.meta.dirname` in `vite.config.ts`, page title set, Vite scaffold assets removed. All checks green.
-9. **session.md refreshed** (this update).
+9. **User commits after the session.** `754f1ea` (session.md tweak, message "removed unnecessary file") and `ebf26f7` (VS Code workspace file added at `api/app/stock-tool.code-workspace`; it points at the repo root, so it works from there but would normally live at the repo root, not inside the Python package).
+10. **Phase 1 built (2026-09-07).** Live probe of yfinance 1.7.0 to confirm shapes (`fast_info` keys, `recommendations_summary`, `analyst_price_targets`, `upgrades_downgrades`, `Search.quotes`; unknown ticker → `fast_info` raises `KeyError`, `history` returns an empty frame). Then cache → indicators → levels → market_data → schemas → routers → error handlers, each with tests. Pandas 3 gotcha fixed: `date_range` defaults to microsecond resolution, so epoch seconds are computed with Timedelta division rather than `astype("int64") // 1e9`. Ruff B008 fixed by using `Annotated[MarketData, Depends(...)]` (`MarketDataDep`).
+11. **Phase 1 checkpoint.** ruff clean, 60 unit tests pass, coverage 99% (`fail_under` 80), 7/7 live integration tests pass in ~4 s. First live run had 2 transient failures (Yahoo throttling made `history` return empty → 404, and `recommendations_summary` came back empty); a rerun was clean. Frontend checks unchanged and green.
 
 ## Repository state
 
 ```
-stock-tool/                                   git main @ 6c27385 (revert point: b71a2fd)
+stock-tool/                                   git main (revert points: b71a2fd, 6c27385)
   README.md  session.md  .pre-commit-config.yaml  .env.example  .gitignore
   index.html  vite.config.ts  tsconfig{,.app,.node}.json  package.json  components.json
   public/favicon.svg
@@ -29,13 +31,16 @@ stock-tool/                                   git main @ 6c27385 (revert point: 
     lib/utils.ts
     test/{setup,server,handlers}.ts
   api/
-    pyproject.toml  uv.lock  .python-version  .env.example  README.md
-    app/{__init__,main,settings}.py
-    tests/{conftest.py,unit/test_health.py,integration/}
+    pyproject.toml  uv.lock  .python-version  .env.example  README.md (endpoint reference)
+    app/{__init__,main,settings,deps,errors,schemas}.py
+    app/stock-tool.code-workspace          (user-added VS Code workspace)
+    app/routers/{search,quotes,history,recommendations}.py
+    app/services/{cache,indicators,levels,market_data}.py
+    tests/conftest.py  tests/fakes.py       (FakeYF: in-memory yfinance stand-in)
+    tests/unit/test_{health,cache,indicators,levels,market_data,routers}.py
+    tests/integration/test_live.py         (@integration, 7 tests, AAPL)
   .github/workflows/ci.yml
 ```
-
-Untracked oddity: an empty `src/precommit/` folder exists on disk (not created by this session, invisible to git). Safe to delete.
 
 Commits:
 
@@ -43,6 +48,8 @@ Commits:
 |---|---|
 | `b71a2fd` | Phase 0 scaffold, requested as a revert point |
 | `6c27385` | Phase 0 closed: shadcn, pre-commit, README, checks green |
+| `754f1ea`, `ebf26f7` | User: session.md tweak, VS Code workspace file |
+| (next) | Phase 1 closed: data API |
 
 Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base UI), vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, pandas 3.0.5. GitHub CLI authenticated; no remote configured yet.
 
@@ -69,14 +76,14 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] Commits: `b71a2fd` (scaffold / revert point), `6c27385` (Phase 0 closed)
 
 ### Phase 1 — Data API (FastAPI + yfinance)
-- [ ] `services/cache.py` TTL cache
-- [ ] `services/market_data.py` yfinance wrapper
-- [ ] `services/indicators.py` — `ema`, `bollinger` (pure pandas)
-- [ ] `services/levels.py` — `support_resistance` (extrema + clustering)
-- [ ] Routers: `/search`, `/quote/{ticker}`, `/quotes`, `/history/{ticker}`, `/indicators/{ticker}`, `/recommendations/{ticker}`
-- [ ] Error handling: unknown ticker → 404, yfinance failure → 502
-- [ ] Unit tests with fixture DataFrames (no network); one `@pytest.mark.integration` test per endpoint
-- [ ] Test checkpoint (coverage ≥ 80% on `app/services`)
+- [x] `services/cache.py` namespaced TTL cache (cachetools, injectable timer, thread-safe)
+- [x] `services/market_data.py` yfinance wrapper (`MarketData` class, yfinance module injectable)
+- [x] `services/indicators.py` — `ema`, `sma`, `bollinger`, `compute_emas` (pure pandas)
+- [x] `services/levels.py` — `support_resistance` (scipy `argrelextrema` + tolerance clustering, kind relative to last close)
+- [x] Routers: `/search`, `/quote/{ticker}`, `/quotes`, `/history/{ticker}`, `/indicators/{ticker}`, `/recommendations/{ticker}`
+- [x] Error handling: unknown ticker → 404, yfinance failure → 502, rate limit → 503 + `Retry-After`, bad period/interval → 422
+- [x] Unit tests with fixture DataFrames (no network); one `@pytest.mark.integration` test per endpoint
+- [x] **Test checkpoint:** ruff clean, pytest 60/60, coverage 99%; integration 7/7 live
 
 ### Phase 2 — Frontend foundation and ticker search
 - [ ] App shell with tabs Dashboard · Charts · Watchlist · Analysts (react-router), dark theme default
@@ -119,10 +126,15 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [ ] README with architecture and run instructions
 - [ ] Final test checkpoint
 
+## Notes for later phases
+
+- `/history` and `/indicators` emit `time` as Unix seconds UTC. lightweight-charts wants `yyyy-mm-dd` strings for daily bars to avoid timezone date shifts; convert on the frontend in Phase 3 when `interval` is `1d` or coarser.
+- yfinance returns an empty frame both for unknown tickers and for transient throttling, so a throttled `/history` call reads as 404. Consider a retry in `MarketData._history` in Phase 7 if it shows up in practice.
+- `/quotes` fans out to one `fast_info` call per symbol (cached 60 s). Fine for a watchlist of tens; revisit with `yf.download` batching if it becomes slow.
+- Empty analyst data (ETFs, small caps) returns empty lists rather than 404; the symbol is only validated via `quote()` when all three datasets are missing.
+
 ## Next actions
 
-1. **Phase 1** — build in this order so each layer is tested before the next depends on it:
-   `services/cache.py` → `services/indicators.py` + `services/levels.py` (pure pandas, fixture tests) → `services/market_data.py` (yfinance wrapper, mocked in tests) → routers → integration tests.
-2. Optional now: `pip install pre-commit && pre-commit install` for local per-commit hooks.
-3. Optional now: create the GitHub remote and push so CI runs on every commit (`gh repo create`), otherwise deferred to Phase 7.
-4. Delete the empty `src/precommit/` folder if it was accidental.
+1. **Phase 2** — frontend foundation: app shell with tabs (react-router, dark theme), `src/lib/api.ts` typed client with zod schemas mirroring `api/app/schemas.py`, react-query hooks, `TickerSearch` combobox against `/search`, Zustand active-tickers store, MSW handlers for every endpoint. Start the API with `cd api && uv run uvicorn app.main:app --reload` and set `VITE_API_URL=http://localhost:8000`.
+2. Optional: move `api/app/stock-tool.code-workspace` to the repo root (adjust `path` to `.`).
+3. Optional: `pip install pre-commit && pre-commit install`; `gh repo create` and push so CI runs (otherwise Phase 7).

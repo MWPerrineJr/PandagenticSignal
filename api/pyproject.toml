@@ -31,10 +31,13 @@ markers = [
     "integration: hits the live Yahoo Finance network; run with `pytest -m integration`",
 ]
 asyncio_mode = "auto"
+filterwarnings = [
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+    "ignore:The anyio.abc.BlockingPortal alias is deprecated",
+]
 
 [tool.coverage.run]
 source = ["app"]
-omit = ["app/main.py"]
 
 [tool.coverage.report]
 fail_under = 80

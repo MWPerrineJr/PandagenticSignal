@@ -61,6 +61,10 @@ supabase/            migrations and edge functions (Phase 5+)
 session.md           phase checklist and session log
 ```
 
+## API
+
+Endpoint reference, error codes and module layout: [`api/README.md`](api/README.md).
+
 ## Environment variables
 
 Frontend (`.env`): `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
