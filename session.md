@@ -1,6 +1,6 @@
 # Session Log — Stock Analysis Tool
 
-Last updated: 2026-09-07
+Last updated: 2026-09-07 (end of day)
 
 ## Conversation summary
 
@@ -202,7 +202,35 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - The consensus label uses a weighted mean bucketed at 4.5/3.5/2.5/1.5; AAPL's live mix (6/18/13/3/3) lands on Hold at 3.49, which surprises people who expect "Buy". Consider Yahoo's own `recommendationKey` from `Ticker.info` if that matters.
 - The combobox renders cmdk primitives directly with an absolutely positioned panel (no Base UI Popover) so focus and jsdom behave predictably.
 
-## Next actions
+## Pick up here (2026-09-08)
+
+**Where things stand:** Phases 0–6 are closed. Phase 7 is complete except the Lovable import and the
+final checkpoint against the deployed frontend. Everything is committed and pushed; `main` on GitHub is
+`e657bfa` or later and CI is green.
+
+**Live pieces:**
+- API: https://stock-tool-api-qg9s.onrender.com (Render free plan; cold start ~30 s after 15 min idle).
+  CORS currently allows only `http://localhost:5173`.
+- Supabase: `stock-tool-dev` (`agumrmsaeblcldcygajl`), one user account (the owner), watchlist and
+  one dashboard layout stored.
+- GitHub: https://github.com/MWPerrineJr/stock-tool (public).
+
+**To resume locally:** `cd api && uv run uvicorn app.main:app --reload` and `npm run dev` (uses the local
+API per `.env`), or `VITE_API_URL=https://stock-tool-api-qg9s.onrender.com npm run dev` to use Render.
+
+**Tomorrow, in order:**
+1. User: import the repo into Lovable (Import from GitHub), set `VITE_API_URL` = Render URL plus the
+   two Supabase values from local `.env`, connect Lovable's Supabase integration to the existing
+   project, then report the Lovable origin (`https://….lovable.app`).
+2. Claude: add that origin to `STOCK_API_CORS_ORIGINS` on Render (user does it in the Render dashboard,
+   or via `render.yaml` + env), then run `E2E_BASE_URL=<lovable origin> npx playwright test`.
+3. Close Phase 7 in this log: tick the last two checklist items, record the final checkpoint.
+4. Then the polish backlog, in rough priority: replace `window.prompt`/`confirm` in the dashboard
+   toolbar with dialogs; Bollinger band fill (custom primitive); scale S/R `order` with bar count;
+   consider Yahoo's `recommendationKey` for the consensus label; `supabase link` + `supabase test db
+   --linked` for the pgTAP tests; optionally split the main bundle further.
+
+## Next actions (Phase 7 detail)
 
 1. **User steps to finish Phase 7:** (a)–(c) done; (d) import into Lovable with `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, then send the Lovable origin so `STOCK_API_CORS_ORIGINS` can be set. After (c)/(d): `E2E_BASE_URL=<lovable url> npx playwright test`.
 2. Then close Phase 7 in this log with the final checkpoint.
