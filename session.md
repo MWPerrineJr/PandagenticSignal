@@ -62,7 +62,7 @@ Commits:
 | `6c27385` | Phase 0 closed: shadcn, pre-commit, README, checks green |
 | `754f1ea`, `ebf26f7` | User: session.md tweak, VS Code workspace file |
 | `aa8bebd` | Phase 1 closed: data API |
-| (next) | Phase 2 closed: frontend foundation and ticker search |
+| `b9214ab` | Phase 2 closed: frontend foundation and ticker search |
 
 Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base UI), vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, pandas 3.0.5. GitHub CLI authenticated; no remote configured yet.
 
