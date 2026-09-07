@@ -32,6 +32,7 @@ Last updated: 2026-09-07
 24. **Phase 7 started (2026-09-07).** Host comparison given (Render free tier spins down when idle; Railway usage-billed, always warm); recommended Render. Host-independent work done first: per-IP rate limiting (`app/ratelimit.py`, moving window on the `limits` library, `X-RateLimit-*` headers, 429 + `Retry-After`, `/health` and docs exempt, keyed by first `X-Forwarded-For` hop), JSON structured logging + access log middleware (`app/logging_config.py`, `STOCK_API_LOG_FORMAT=json`), CORS `max_age`, `create_app(settings)` for tests, `api/Dockerfile` (uv image, non-root, honours `PORT`, healthcheck), `.dockerignore`, `render.yaml` blueprint, Playwright (`playwright.config.ts`, `e2e/smoke.spec.ts`: search → quote → chart overlays + URL → watchlist add/remove → analysts; unknown symbol errors; login rejects bad credentials), CI `e2e` job on schedule/dispatch, README rewritten with deploy + Lovable steps. **slowapi dropped:** FastAPI 0.141 registers routers lazily, so slowapi's middleware cannot resolve the route and its default limits silently never fire (verified: `_find_route_handler` returns None). The user committed the in-progress files as `6f244fe` ("updated files") mid-way; the follow-up commit completes them.
 25. **Phase 7 checkpoint (partial).** pytest 69/69, 99%; vitest 130/130; tsc + oxlint clean; build OK; Playwright 3/3 against the live API in 13 s; live API returns rate-limit headers. **Not done yet (needs the user):** Docker image build (Docker Desktop not running), GitHub repo creation + push (outward-facing, needs go-ahead), Render deploy (needs the user's account), Lovable import, then re-running Playwright with `E2E_BASE_URL` against the deployed frontend. The optional Supabase edge-function proxy was skipped: the API is CORS-locked and rate-limited, and hiding its URL adds latency for no security gain with public market data.
 26. **GitHub.** The user had already created **https://github.com/MWPerrineJr/stock-tool** (public) and pushed `6f244fe`; its CI run failed as expected (half-finished slowapi state). Pushed `0b77b56` + `f7b06fc`; CI run 34161028454 green (API 19 s, Web 47 s). `.env` confirmed not in the repo. Render account created by the user; blueprint deploy pending.
+27. **Render live:** https://stock-tool-api-qg9s.onrender.com (free plan, Ohio, built from `api/Dockerfile`, so the image is verified without local Docker). Probed: `/health` 0.2 s, live `/quote/AAPL`, `/indicators/AAPL?period=6mo` (128 candles, 6 levels), `X-RateLimit-*` headers present, CORS header only for `http://localhost:5173`, 404 for unknown symbols. Playwright 3/3 against a frontend served on :5173 with `VITE_API_URL` = Render URL (a first run on :5174 failed purely because that origin is not in `STOCK_API_CORS_ORIGINS`). The dev server on :5173 is currently running with `VITE_API_URL` pointed at Render.
 
 ## Repository state
 
@@ -170,11 +171,11 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 
 ### Phase 7 — Hardening, deployment, Lovable import
 - [x] API rate limiting (`limits`), JSON logging, CORS from env, Dockerfile, `render.yaml`
-- [ ] Docker image build verified locally (Docker Desktop must be running)
+- [x] Docker image verified by Render's build (local Docker not needed)
 - [x] Optional Supabase edge-function proxy — skipped deliberately (see note 25)
 - [x] Playwright E2E smoke (3 tests, live data) + weekly/dispatch CI job
 - [x] GitHub push (repo created by the user, public), CI green
-- [ ] Render deploy from the blueprint, `STOCK_API_CORS_ORIGINS`
+- [x] Render deploy from the blueprint (`STOCK_API_CORS_ORIGINS=http://localhost:5173` for now)
 - [ ] Lovable import, env vars, Supabase integration
 - [x] README with architecture, run, test and deploy instructions
 - [ ] Final test checkpoint: CI green on GitHub, Playwright against the deployed frontend
@@ -203,7 +204,7 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 
 ## Next actions
 
-1. **User steps to finish Phase 7:** (a) start Docker Desktop so the image can be built and smoke-run locally; (b) done — repo is on GitHub and CI is green; (c) in Render: New → Blueprint → `stock-tool`, set `STOCK_API_CORS_ORIGINS=http://localhost:5173`, paste the service URL here; (d) import into Lovable with `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, then send the Lovable origin so `STOCK_API_CORS_ORIGINS` can be set. After (c)/(d): `E2E_BASE_URL=<lovable url> npx playwright test`.
+1. **User steps to finish Phase 7:** (a)–(c) done; (d) import into Lovable with `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, then send the Lovable origin so `STOCK_API_CORS_ORIGINS` can be set. After (c)/(d): `E2E_BASE_URL=<lovable url> npx playwright test`.
 2. Then close Phase 7 in this log with the final checkpoint.
 3. Previous plan for reference — **Phase 7** — Hardening, deployment, Lovable import. Order: (a) API `Dockerfile` + `slowapi` rate limiting + CORS from env + `/health` used by the host; deploy to Render or Railway (user picks; needs an account and will ask for env vars `STOCK_API_CORS_ORIGINS`); (b) Playwright E2E smoke (search → chart → watchlist → analysts) against the dev servers, plus a CI job; (c) `gh repo create` + push (CI runs), then Lovable import via GitHub with `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`; (d) README architecture + run + deploy sections; (e) optional Supabase edge-function proxy if the API host needs hiding; (f) final checkpoint. Optional polish first: replace `window.prompt`/`confirm` in the dashboard toolbar with dialogs. Optional: `supabase link --project-ref agumrmsaeblcldcygajl` then `supabase test db --linked` for the pgTAP RLS tests.
 2. Optional: move `api/app/stock-tool.code-workspace` to the repo root (adjust `path` to `.`).
