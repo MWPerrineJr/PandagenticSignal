@@ -1,13 +1,12 @@
 import { useTicker } from '@/lib/use-ticker'
-import { useTickerStore } from '@/stores/tickers'
+import { useWatchlist } from '@/lib/use-watchlist'
 import { Button } from '@/components/ui/button'
 import { EmptyTicker } from '@/features/empty-ticker'
 import { QuoteCard } from '@/features/quote/quote-card'
 
 export function DashboardPage() {
   const [ticker] = useTicker()
-  const tracked = useTickerStore((s) => s.tickers)
-  const toggle = useTickerStore((s) => s.toggle)
+  const { tickers: tracked, toggle, source } = useWatchlist()
   const isTracked = ticker ? tracked.includes(ticker) : false
 
   return (
@@ -30,7 +29,8 @@ export function DashboardPage() {
         <EmptyTicker />
       )}
       <p className="text-sm text-muted-foreground">
-        Customizable widgets arrive in Phase 6. Tracking {tracked.length} symbol{tracked.length === 1 ? '' : 's'}.
+        Customizable widgets arrive in Phase 6. Tracking {tracked.length} symbol{tracked.length === 1 ? '' : 's'}
+        {source === 'cloud' ? ', synced to your account.' : ' in this browser.'}
       </p>
     </section>
   )

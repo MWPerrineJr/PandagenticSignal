@@ -1,6 +1,8 @@
 import { ArrowDownIcon, ArrowUpIcon, XIcon } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useTickerStore, MAX_TRACKED } from '@/stores/tickers'
+import { MAX_TRACKED } from '@/stores/tickers'
+import { useWatchlist } from '@/lib/use-watchlist'
+import { Link } from 'react-router-dom'
 import { useTicker } from '@/lib/use-ticker'
 import { useQuotes } from '@/lib/queries'
 import { formatChange, formatCompact, formatPrice } from '@/lib/format'
@@ -11,10 +13,7 @@ import { TickerSearch } from '@/features/search/ticker-search'
 import { Sparkline } from './sparkline'
 
 export function WatchlistPage() {
-  const tracked = useTickerStore((s) => s.tickers)
-  const add = useTickerStore((s) => s.add)
-  const remove = useTickerStore((s) => s.remove)
-  const move = useTickerStore((s) => s.move)
+  const { tickers: tracked, add, remove, move, source, isLoading, error: saveError } = useWatchlist()
   const [ticker, setTicker] = useTicker()
   const navigate = useNavigate()
   const { data, isPending, isError, error } = useQuotes(tracked)
@@ -38,7 +37,14 @@ export function WatchlistPage() {
         <TickerSearch onSelect={add} label="Add a symbol to the watchlist" placeholder="Add a symbol or company" className="w-64 sm:w-80" />
       </div>
 
-      {tracked.length === 0 ? (
+      {saveError && (
+        <p role="alert" className="text-sm text-destructive">
+          {saveError}
+        </p>
+      )}
+      {isLoading ? (
+        <Skeleton className="h-24 w-full" aria-busy aria-label="Loading watchlist" />
+      ) : tracked.length === 0 ? (
         <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
           Nothing tracked yet. Add a symbol above, or press “Track” on the Dashboard.
         </p>
@@ -113,7 +119,20 @@ export function WatchlistPage() {
           </table>
         </div>
       )}
-      <p className="text-xs text-muted-foreground">Quotes refresh every minute. Saved in this browser until you sign in (Phase 5).</p>
+      <p className="text-xs text-muted-foreground">
+        Quotes refresh every minute.{' '}
+        {source === 'cloud' ? (
+          'Synced to your account.'
+        ) : (
+          <>
+            Saved in this browser.{' '}
+            <Link to="/login" state={{ from: '/watchlist' }} className="underline underline-offset-4 hover:text-foreground">
+              Sign in
+            </Link>{' '}
+            to sync across devices.
+          </>
+        )}
+      </p>
     </section>
   )
 }

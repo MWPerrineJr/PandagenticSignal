@@ -1,7 +1,7 @@
 import { XIcon } from 'lucide-react'
 import { useTheme } from '@/components/theme-provider'
 import { Button } from '@/components/ui/button'
-import { useTickerStore } from '@/stores/tickers'
+import { useWatchlist } from '@/lib/use-watchlist'
 import { MAX_COMPARE, VIZ_PALETTES } from '@/lib/viz-palette'
 import { TickerSearch } from '@/features/search/ticker-search'
 import { cn } from '@/lib/utils'
@@ -15,7 +15,7 @@ export interface ComparePickerProps {
 
 /** Chips for the tracked tickers plus a search box; up to MAX_COMPARE symbols in total. */
 export function ComparePicker({ primary, compare, onToggle, onClear }: ComparePickerProps) {
-  const tracked = useTickerStore((s) => s.tickers)
+  const { tickers: tracked } = useWatchlist()
   const { theme } = useTheme()
   const colors = VIZ_PALETTES[theme].categorical
   const candidates = Array.from(new Set([...tracked, ...compare])).filter((s) => s !== primary)

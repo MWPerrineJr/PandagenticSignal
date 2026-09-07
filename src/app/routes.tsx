@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { DashboardPage } from '@/features/dashboard/dashboard-page'
 import { WatchlistPage } from '@/features/watchlist/watchlist-page'
 import { AnalystsPage } from '@/features/analysts/analysts-page'
+import { LoginPage } from '@/features/auth/login-page'
 
 // The chart library is the heaviest dependency; only load it when the tab is opened.
 const ChartsPage = lazy(() => import('@/features/charts/charts-page').then((m) => ({ default: m.ChartsPage })))
@@ -28,6 +29,7 @@ export function AppRoutes() {
         />
         <Route path="watchlist" element={<WatchlistPage />} />
         <Route path="analysts" element={<AnalystsPage />} />
+        <Route path="login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
