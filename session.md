@@ -16,7 +16,10 @@ Last updated: 2026-09-07
 8. **Phase 0 finished, commit `6c27385`.** shadcn/ui init (Base UI, Geist font, theme tokens, Button, `cn`), pre-commit config, README, vitest coverage provider. Fixes: dropped deprecated tsconfig `baseUrl` (TypeScript 6 error), `__dirname` → `import.meta.dirname` in `vite.config.ts`, page title set, Vite scaffold assets removed. All checks green.
 9. **User commits after the session.** `754f1ea` (session.md tweak, message "removed unnecessary file") and `ebf26f7` (VS Code workspace file added at `api/app/stock-tool.code-workspace`; it points at the repo root, so it works from there but would normally live at the repo root, not inside the Python package).
 10. **Phase 1 built (2026-09-07).** Live probe of yfinance 1.7.0 to confirm shapes (`fast_info` keys, `recommendations_summary`, `analyst_price_targets`, `upgrades_downgrades`, `Search.quotes`; unknown ticker → `fast_info` raises `KeyError`, `history` returns an empty frame). Then cache → indicators → levels → market_data → schemas → routers → error handlers, each with tests. Pandas 3 gotcha fixed: `date_range` defaults to microsecond resolution, so epoch seconds are computed with Timedelta division rather than `astype("int64") // 1e9`. Ruff B008 fixed by using `Annotated[MarketData, Depends(...)]` (`MarketDataDep`).
-11. **Phase 1 checkpoint.** ruff clean, 60 unit tests pass, coverage 99% (`fail_under` 80), 7/7 live integration tests pass in ~4 s. First live run had 2 transient failures (Yahoo throttling made `history` return empty → 404, and `recommendations_summary` came back empty); a rerun was clean. Frontend checks unchanged and green.
+11. **Phase 1 checkpoint (see below).** ruff clean, 60 unit tests pass, coverage 99% (`fail_under` 80), 7/7 live integration tests pass in ~4 s. First live run had 2 transient failures (Yahoo throttling made `history` return empty → 404, and `recommendations_summary` came back empty); a rerun was clean. Frontend checks unchanged and green.
+12. **Phase 2 built (2026-09-07).** shadcn `input`, `badge`, `card`, `skeleton` added (plus `cmdk` for the combobox; the shadcn `command`/`popover`/`dialog` wrappers were removed as unused). Typed API client with zod schemas mirroring the Python models, react-query hooks, ticker-in-URL hook (`?t=`), zustand tracked-tickers store (localStorage), dark-default `ThemeProvider`, app shell with four routed tabs that preserve the query string, `TickerSearch` combobox, dashboard `QuoteCard`, placeholder Charts/Analysts pages, Watchlist listing the tracked symbols.
+13. **Phase 2 checkpoint.** tsc clean, oxlint clean (only the shadcn fast-refresh warnings), vitest 38/38, coverage 90% on `src/lib` + `src/features`, vite build OK. Verified in Chrome against the live API: dashboard quote for AAPL, search "nv" → Enter selects NVDA and updates URL + quote, Track → Watchlist shows NVDA, theme toggle works, no console errors.
+14. **Bug found only in the browser, fixed.** cmdk keeps its highlighted value from the previous result set, so after typing "n" (highlight NSAIR) then "v", nothing was highlighted and Enter did nothing. Fix: the highlight is derived per result set (first result by default, arrow keys override) and the component owns the Enter key. Tests added for the two-query sequence and arrow-key selection.
 
 ## Repository state
 
@@ -27,9 +30,18 @@ stock-tool/                                   git main (revert points: b71a2fd, 
   public/favicon.svg
   src/
     App.tsx  App.test.tsx  main.tsx  index.css
-    components/ui/button.tsx
-    lib/utils.ts
-    test/{setup,server,handlers}.ts
+    app/{routes,providers}.tsx              routes + QueryClient/Theme providers
+    components/{theme-provider,theme-toggle}.tsx
+    components/layout/app-shell.tsx         header, nav tabs, TickerSearch
+    components/ui/{button,input,badge,card,skeleton}.tsx
+    features/search/ticker-search.tsx (+test)
+    features/quote/quote-card.tsx
+    features/{dashboard,charts,watchlist,analysts}/*-page.tsx
+    features/empty-ticker.tsx
+    lib/api.ts (zod schemas + fetchers)  lib/queries.ts (hooks)  lib/use-ticker.ts
+    lib/use-debounce.ts  lib/format.ts  lib/utils.ts  (+tests)
+    stores/tickers.ts (+test)
+    test/{setup,server,handlers,fixtures}.ts  test/render.tsx
   api/
     pyproject.toml  uv.lock  .python-version  .env.example  README.md (endpoint reference)
     app/{__init__,main,settings,deps,errors,schemas}.py
@@ -50,6 +62,7 @@ Commits:
 | `6c27385` | Phase 0 closed: shadcn, pre-commit, README, checks green |
 | `754f1ea`, `ebf26f7` | User: session.md tweak, VS Code workspace file |
 | `aa8bebd` | Phase 1 closed: data API |
+| (next) | Phase 2 closed: frontend foundation and ticker search |
 
 Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base UI), vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, pandas 3.0.5. GitHub CLI authenticated; no remote configured yet.
 
@@ -86,11 +99,11 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] **Test checkpoint:** ruff clean, pytest 60/60, coverage 99%; integration 7/7 live
 
 ### Phase 2 — Frontend foundation and ticker search
-- [ ] App shell with tabs Dashboard · Charts · Watchlist · Analysts (react-router), dark theme default
-- [ ] `src/lib/api.ts` typed client + react-query hooks
-- [ ] `TickerSearch` combobox (name or symbol, debounced, keyboard nav), ticker in URL params
-- [ ] Zustand "active tickers" store
-- [ ] Test checkpoint (TickerSearch with MSW, schema parsing, routing)
+- [x] App shell with tabs Dashboard · Charts · Watchlist · Analysts (react-router), dark theme default
+- [x] `src/lib/api.ts` typed client (zod) + `src/lib/queries.ts` react-query hooks
+- [x] `TickerSearch` combobox (name or symbol, debounced 250 ms, keyboard nav, Enter on raw text), ticker in `?t=`
+- [x] Zustand tracked-tickers store (localStorage, max 20)
+- [x] **Test checkpoint:** vitest 38/38 (TickerSearch with MSW, schema parsing, hooks, routing, store), tsc + oxlint clean, build OK, live browser check
 
 ### Phase 3 — Charts tab with technical indicators
 - [ ] lightweight-charts candlestick + volume
@@ -133,8 +146,12 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - `/quotes` fans out to one `fast_info` call per symbol (cached 60 s). Fine for a watchlist of tens; revisit with `yf.download` batching if it becomes slow.
 - Empty analyst data (ETFs, small caps) returns empty lists rather than 404; the symbol is only validated via `quote()` when all three datasets are missing.
 
+- The shadcn Base UI components import `cn` from the `cn` npm package rather than `@/lib/utils`; both exist, app code uses `@/lib/utils`.
+- Retry policy lives on the app `QueryClient` (`makeQueryClient`), not on hooks, so tests can disable it. 404s are never retried.
+- The combobox renders cmdk primitives directly with an absolutely positioned panel (no Base UI Popover) so focus and jsdom behave predictably.
+
 ## Next actions
 
-1. **Phase 2** — frontend foundation: app shell with tabs (react-router, dark theme), `src/lib/api.ts` typed client with zod schemas mirroring `api/app/schemas.py`, react-query hooks, `TickerSearch` combobox against `/search`, Zustand active-tickers store, MSW handlers for every endpoint. Start the API with `cd api && uv run uvicorn app.main:app --reload` and set `VITE_API_URL=http://localhost:8000`.
+1. **Phase 3** — Charts tab: `npm i lightweight-charts`, candlestick + volume from `useHistory`/`useIndicators`, overlays for EMA 10/30/60/90, Bollinger Bands, support/resistance price lines; period/interval/overlay toggles in URL params (`useTicker`-style hook); crosshair tooltip. Convert `time` (Unix s) to `yyyy-mm-dd` business days for daily+ intervals. lightweight-charts needs a canvas mock in jsdom (test the data-transform layer and controls; smoke-test the chart with a mocked `createChart`). To run locally: `cd api && uv run uvicorn app.main:app --reload` and `npm run dev`.
 2. Optional: move `api/app/stock-tool.code-workspace` to the repo root (adjust `path` to `.`).
 3. Optional: `pip install pre-commit && pre-commit install`; `gh repo create` and push so CI runs (otherwise Phase 7).

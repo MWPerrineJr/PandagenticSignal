@@ -1,9 +1,14 @@
+import { BrowserRouter } from 'react-router-dom'
+import { AppProviders } from '@/app/providers'
+import { AppRoutes } from '@/app/routes'
+
 function App() {
   return (
-    <main className="min-h-svh bg-background text-foreground p-6">
-      <h1 className="text-2xl font-semibold">Stock Analysis Tool</h1>
-      <p className="text-muted-foreground">Scaffold ready.</p>
-    </main>
+    <AppProviders>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AppProviders>
   )
 }
 
