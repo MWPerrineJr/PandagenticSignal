@@ -95,7 +95,7 @@ Commits:
 | `6d1f4b7` | Phase 5 closed: Supabase auth and persistence |
 | `436b5c9` | Phase 6 closed: customizable dashboard |
 | `6f244fe` | User: Phase 7 work in progress ("updated files") |
-| (next) | Phase 7 part 1: hardening, Docker, Playwright, README |
+| `0b77b56` | Phase 7 part 1: hardening, Docker, Playwright, README |
 
 Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base UI), vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, pandas 3.0.5. GitHub CLI authenticated; no remote configured yet.
 
