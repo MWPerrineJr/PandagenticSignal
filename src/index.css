@@ -128,3 +128,18 @@
     @apply font-sans;
     }
 }
+/* react-grid-layout: theme the placeholder and resize handle */
+.react-grid-item.react-grid-placeholder {
+  background: var(--primary);
+  opacity: 0.15;
+  border-radius: var(--radius);
+}
+.react-grid-item > .react-resizable-handle::after {
+  border-color: var(--muted-foreground);
+}
+.react-grid-item:not(.is-editing *) > .react-resizable-handle {
+  display: none;
+}
+.is-editing .react-grid-item > .react-resizable-handle {
+  display: block;
+}

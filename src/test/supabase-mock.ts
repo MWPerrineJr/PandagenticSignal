@@ -20,7 +20,7 @@ let seq = 0
 const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`
 
 export const state: State = {
-  tables: { watchlists: [], watchlist_items: [] },
+  tables: { watchlists: [], watchlist_items: [], dashboard_layouts: [] },
   users: new Map(),
   session: null,
   listeners: new Set(),
@@ -28,7 +28,7 @@ export const state: State = {
 }
 
 export function resetSupabaseMock() {
-  state.tables = { watchlists: [], watchlist_items: [] }
+  state.tables = { watchlists: [], watchlist_items: [], dashboard_layouts: [] }
   state.users.clear()
   state.session = null
   state.listeners.clear()
@@ -80,7 +80,8 @@ class Query implements PromiseLike<{ data: unknown; error: { message: string } |
   private filters: Array<[string, unknown]> = []
   private orderBy: { col: string; asc: boolean } | null = null
   private max: number | null = null
-  private mode: 'select' | 'insert' = 'select'
+  private mode: 'select' | 'insert' | 'upsert' | 'update' | 'delete' = 'select'
+  private patch: Row = {}
   private singleMode: 'maybe' | 'one' | null = null
   private pending: Row[] = []
   private table: string
@@ -117,18 +118,57 @@ class Query implements PromiseLike<{ data: unknown; error: { message: string } |
     this.pending = Array.isArray(rows) ? rows : [rows]
     return this
   }
+  upsert(rows: Row | Row[], opts?: { onConflict?: string }) {
+    this.mode = 'upsert'
+    this.pending = Array.isArray(rows) ? rows : [rows]
+    this.patch = { onConflict: opts?.onConflict ?? 'id' }
+    return this
+  }
+  update(patch: Row) {
+    this.mode = 'update'
+    this.patch = patch
+    return this
+  }
+  delete() {
+    this.mode = 'delete'
+    return this
+  }
 
   private run(): { data: unknown; error: { message: string } | null } {
     const table = state.tables[this.table] ?? (state.tables[this.table] = [])
     let rows: Row[]
+    const matches = (r: Row) => this.filters.every(([c, v]) => r[c] === v)
     if (this.mode === 'insert') {
       rows = this.pending.map((r) => ({ id: uuid(), ...r }))
       table.push(...rows)
+    } else if (this.mode === 'upsert') {
+      const key = String(this.patch.onConflict)
+      rows = this.pending.map((r) => {
+        const existing = table.find((t) => t[key] === r[key])
+        const now = new Date().toISOString()
+        if (existing) {
+          Object.assign(existing, r, { updated_at: now })
+          return existing
+        }
+        const created = { id: uuid(), updated_at: now, ...r }
+        table.push(created)
+        return created
+      })
+    } else if (this.mode === 'update') {
+      rows = table.filter(matches)
+      for (const r of rows) Object.assign(r, this.patch, { updated_at: new Date().toISOString() })
+    } else if (this.mode === 'delete') {
+      rows = table.filter(matches)
+      state.tables[this.table] = table.filter((r) => !matches(r))
     } else {
-      rows = table.filter((r) => this.filters.every(([c, v]) => r[c] === v))
+      rows = table.filter(matches)
       if (this.orderBy) {
         const { col, asc } = this.orderBy
-        rows = [...rows].sort((a, b) => ((a[col] as number) - (b[col] as number)) * (asc ? 1 : -1))
+        rows = [...rows].sort((a, b) => {
+          const av = a[col] as number | string
+          const bv = b[col] as number | string
+          return (av < bv ? -1 : av > bv ? 1 : 0) * (asc ? 1 : -1)
+        })
       }
       if (this.max !== null) rows = rows.slice(0, this.max)
     }

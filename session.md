@@ -25,7 +25,10 @@ Last updated: 2026-09-07
 17. **Phase 4 built (2026-09-07).** Loaded the `dataviz` skill first and validated colours with its palette checker: five categorical slots for compare mode (both modes pass), two-step blue and red arms for the diverging rating bar (ordinal checks pass; light red step re-picked at `#ee9291` because `#f2a09f` failed the 2:1 light-end floor). Values live in `src/lib/viz-palette.ts`. Watchlist tab: quote table over `/quotes` (price, change, volume, market cap, 1-month sparkline per row via `useHistory`), add via `TickerSearch`, move up/down, remove, row click opens Charts; store gained `move()`. Compare mode: `cmp` URL param (max 4 extra symbols), `useHistories` (`useQueries`), `normaliseSeries` rebases every series to 0% at the first *shared* bar, `CompareChart` (lightweight-charts line per symbol, % axis, zero baseline, legend follows crosshair), `ComparePicker` chips from tracked tickers plus a search box; overlays greyed out in compare mode. Analysts tab: consensus badge (weighted 5→1 mean, bucketed), KPI cards, diverging stacked bar per month centred on Hold (HTML segments, 2 px surface gaps, counts labelled only where they fit, hover tooltip, `<details>` table view), price-target track (low→high, mean/median dots, current-price tick, upside %), upgrades/downgrades table (direction icon + label, from → to, target change, show-all). API fix: Yahoo encodes missing price targets as 0 → now `null` (`_price`).
 18. **Phase 4 checkpoint (see below).** API: ruff clean, pytest 60/60, 99%. Web: tsc + oxlint clean, vitest 93/93, coverage 95%, build OK. Verified in Chrome against the live API: Analysts AAPL (43 analysts, Hold 3.5/5, targets $215–$400, 50 grade changes), Watchlist add MSFT/AAPL via search with live rows and sparklines, compare AAPL vs MSFT vs NVDA over 6M with matching chip/line colours; no console errors.
 19. **Phase 5 built (2026-09-07).** User created Supabase project **stock-tool-dev** (`agumrmsaeblcldcygajl`, us-east-2) in the existing org. Schema applied through the Supabase connector (`apply_migration` ×3) and mirrored in `supabase/migrations/`: `profiles`, `watchlists`, `watchlist_items`, `dashboard_layouts`, owner-only RLS on all four, `handle_new_user` trigger (profile + default watchlist on signup), `set_watchlist_items(uuid, text[])` RPC that replaces a list atomically (max 20, security invoker so RLS applies). Security advisor flagged the trigger function as API-callable → execute revoked; anon execute on the RPC revoked too. **RLS verified live** with two throwaway users via `execute_sql` (13 checks: own rows only, cross-user read/insert/update/RPC blocked, anon sees nothing; users deleted afterwards). pgTAP version of the same checks in `supabase/tests/0001_rls.test.sql`. Supabase CLI installed via brew (2.116.0); Docker not running, so `supabase test db` waits until the project is linked. Frontend: `@supabase/supabase-js` 2.115, `src/lib/supabase.ts` (null client when env is blank), `AuthProvider`/`useAuth`, `/login` (password sign-in, sign-up, magic link), header `UserMenu`, `watchlist-repo.ts` (default list lookup/create, list, RPC save), `useWatchlist()` hook that every page now uses: signed out → zustand/localStorage, signed in → Supabase with optimistic writes, one-time import of a non-empty local list into an empty cloud list per user. `.env` written locally with the publishable key (gitignored); `.env.example` documented.
-20. **Phase 5 checkpoint.** vitest 110/110 (in-memory Supabase fake wired globally in `src/test/setup.ts`; repo, hook incl. import + rollback, login flow, sign-out fallback), tsc + oxlint clean, build OK (main chunk now ~560 kB minified because supabase-js joined it; warning left visible on purpose). Browser: signed-out app runs against the real project (session check resolves, local watchlist intact, `/login` renders, no console errors). **Not verified by me:** actual sign-up/sign-in, since I don't enter credentials; the user does that step.
+20. **Phase 5 checkpoint (see below).** vitest 110/110 (in-memory Supabase fake wired globally in `src/test/setup.ts`; repo, hook incl. import + rollback, login flow, sign-out fallback), tsc + oxlint clean, build OK (main chunk now ~560 kB minified because supabase-js joined it; warning left visible on purpose). Browser: signed-out app runs against the real project (session check resolves, local watchlist intact, `/login` renders, no console errors). **Not verified by me:** actual sign-up/sign-in, since I don't enter credentials; the user does that step.
+21. **User signed up** (one account on stock-tool-dev); the local watchlist (NVDA, MSFT, AAPL) was imported into the account on first sign-in as designed.
+22. **Phase 6 built (2026-09-07).** `react-grid-layout` 2.2.4 (v2 API: `useContainerWidth`, `gridConfig`/`dragConfig`/`resizeConfig`, `verticalCompactor`). Layout model `src/lib/dashboard-layout.ts` (zod, `version: 1`, migration hook, widget config schemas with defaults, unknown widget types preserved, `addWidget`/`removeWidget`/`updateWidgetConfig`/`applyGrid`, starter layout = watchlist + chart + quote + analyst). Widget registry with five widgets (Quote, Chart, Watchlist, Analysts, Compare), each with a settings panel; Chart and Compare widgets are `React.lazy` so lightweight-charts stays out of the main bundle. `WidgetFrame` (title bar is the drag handle in edit mode, gear + remove). `useDashboard()` mirrors `useWatchlist()`: signed out → zustand store `stock-tool.dashboard`; signed in → `dashboard_layouts` rows, seeded from the local active layout on first sign-in, active selection remembered per user in localStorage. Edits apply instantly and persist after 1 s of quiet (`SAVE_DEBOUNCE_MS`), flushed on Done/unmount/switch. Toolbar: layout picker, Edit layout/Done, Add widget menu, New/Rename/Make default/Delete layout (window.prompt/confirm for now).
+23. **Phase 6 checkpoint.** vitest 130/130 (layout round-trip + version + unknown type, registry resolves every type, debounced save fires once with fake timers, flush, cloud seeding + save, page add/configure/remove/switch), coverage 93% lines, tsc + oxlint clean, build OK (chart library in its own chunk; main chunk ~800 kB minified with supabase-js + react-grid-layout, warning left visible). Browser, signed in against the real project: starter widgets render with live data; Add widget → Compare appears with live lines; reload keeps it (row in Supabase); resize watchlist 10 → 7 rows persisted with the quote widget compacted beneath. The Chrome extension's synthetic drag does not reach react-draggable, so the resize was driven with real DOM mouse events from the page; the same wiring is unit-tested.
 
 ## Repository state
 
@@ -48,12 +51,16 @@ stock-tool/                                   git main (revert points: b71a2fd, 
     features/charts/{charts-page,price-chart,chart-controls,compare-chart,compare-picker}.tsx (+tests)
     features/watchlist/{watchlist-page,sparkline}.tsx (+test)
     features/analysts/{analysts-page,recommendation-bars,price-target-gauge,grade-table}.tsx (+test)
-    features/dashboard/dashboard-page.tsx
+    features/dashboard/{dashboard-page,dashboard-grid}.tsx (+test)
+    features/dashboard/widgets/{registry,widget-frame,settings-fields,unknown-widget}.tsx (+test)
+    features/dashboard/widgets/{quote,chart,watchlist,analyst,compare}-widget.tsx
     features/empty-ticker.tsx
     lib/api.ts (zod schemas + fetchers)  lib/queries.ts (hooks)  lib/use-ticker.ts
     lib/chart-data.ts (API rows → series)  lib/use-chart-params.ts  lib/chart-theme.ts
     lib/viz-palette.ts (validated colours)  lib/compare.ts  lib/analysts.ts
     lib/supabase.ts  lib/watchlist-repo.ts  lib/use-watchlist.ts  (+tests)
+    lib/dashboard-layout.ts  lib/dashboard-repo.ts  lib/use-dashboard.ts  (+tests)
+    stores/dashboard.ts (signed-out layouts)
     lib/use-debounce.ts  lib/format.ts  lib/utils.ts  (+tests)
     stores/tickers.ts (+test)
     test/{setup,server,handlers,fixtures}.ts  test/render.tsx  test/chart-mock.ts  test/supabase-mock.ts
@@ -84,6 +91,7 @@ Commits:
 | `f3f0b3f` | Phase 3 closed: Charts tab |
 | `1c7e736` | Phase 4 closed: watchlist, compare mode, Analysts tab |
 | `6d1f4b7` | Phase 5 closed: Supabase auth and persistence |
+| (next) | Phase 6 closed: customizable dashboard |
 
 Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base UI), vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, pandas 3.0.5. GitHub CLI authenticated; no remote configured yet.
 
@@ -147,13 +155,13 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] Auth UI (`/login`: password, sign-up, magic link) + header user menu. **Deviation from plan:** no hard route guard; Dashboard and Watchlist stay usable signed-out with the local list and show a "Sign in to sync" hint. A wall would have thrown away the working localStorage flow for no gain.
 - [x] `useWatchlist()` over Supabase with optimistic writes; one-time localStorage import on first sign-in
 - [x] **Test checkpoint:** vitest 110/110 with an in-memory Supabase fake; RLS verified live via SQL (13 checks); pgTAP file ready for `supabase test db --linked`
-- [ ] **User step:** sign up in the running app and confirm the watchlist syncs (see Next actions)
+- [x] **User step:** signed up; watchlist synced
 
 ### Phase 6 — Customizable dashboard
-- [ ] react-grid-layout grid, edit mode
-- [ ] Widget registry: Watchlist, Chart, Quote, Analyst, Compare
-- [ ] Layout persistence (jsonb, debounced), named layouts, starter layout
-- [ ] Test checkpoint
+- [x] react-grid-layout v2 grid, edit mode (drag by title bar, resize from corner, add/remove)
+- [x] Widget registry: Watchlist, Chart, Quote, Analyst, Compare, each with settings; unknown type → placeholder
+- [x] Layout persistence (jsonb, 1 s debounce, flush on Done), named layouts with default, starter layout, local ↔ cloud seeding
+- [x] **Test checkpoint:** vitest 130/130, tsc + oxlint clean, build OK, live browser check incl. Supabase round trip
 
 ### Phase 7 — Hardening, deployment, Lovable import
 - [ ] API Dockerfile, deploy (Render/Railway), rate limiting, CORS lockdown
@@ -175,6 +183,9 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - Bollinger Bands are drawn as three lines, not a filled band; a fill needs a custom series primitive in lightweight-charts v5. Revisit if wanted.
 - Daily chart times are `yyyy-mm-dd` computed from the UTC timestamp shifted by +12 h, which is correct for exchange offsets in (−12 h, +12 h]. NZ/Kiribati summer time (+13/+14) would be off by a day; fix by emitting a local date from the API if it matters.
 - With short windows (e.g. 1M daily, 6M weekly) support/resistance has few extrema and mostly `×1` levels; the API's `order=5` could scale with bar count later.
+- Layout tools use `window.prompt`/`window.confirm` for new/rename/delete. Fine for now; a shadcn Dialog would be the polish item (Phase 7 or later).
+- Widgets that pin a symbol keep it; blank symbol follows the header ticker. The `subtitle` in the title bar shows which is in effect.
+- The grid uses `static: !editing` on every item outside edit mode, so nothing moves accidentally; `onLayoutChange` is ignored unless editing.
 - Supabase auth defaults to **email confirmation on**: password sign-up sends a confirmation email (built-in sender, a few per hour). For development, Authentication → Providers → Email → "Confirm email" can be switched off in the dashboard; the app already handles both cases (`needsConfirmation`).
 - The publishable key (`sb_publishable_…`) is used instead of the legacy anon JWT; both are safe in the browser, RLS is the real boundary.
 - `useWatchlist` calls the cloud queries unconditionally with `enabled` flags so hook order is stable; the local-vs-cloud branch happens on the return value.
@@ -184,7 +195,6 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 
 ## Next actions
 
-1. **User: try the real sign-in.** With both servers running (`cd api && uv run uvicorn app.main:app --reload`, `npm run dev`), open http://localhost:5173/login, create an account, confirm the email if asked, and check that the Watchlist tab says "Synced to your account" and shows the imported local symbols (NVDA, MSFT, AAPL). Optional: `supabase link --project-ref agumrmsaeblcldcygajl` (asks for the DB password) then `supabase test db --linked` to run the pgTAP RLS tests.
-2. **Phase 6** — Customizable dashboard: `npm i react-grid-layout`, widget registry (Watchlist, Chart, Quote, Analyst, Compare), edit mode with drag/resize, layout persisted to `dashboard_layouts.layout` (jsonb, debounced) for signed-in users and localStorage otherwise (same dual-source pattern as `useWatchlist`), named layouts, a starter layout for new users.
+1. **Phase 7** — Hardening, deployment, Lovable import. Order: (a) API `Dockerfile` + `slowapi` rate limiting + CORS from env + `/health` used by the host; deploy to Render or Railway (user picks; needs an account and will ask for env vars `STOCK_API_CORS_ORIGINS`); (b) Playwright E2E smoke (search → chart → watchlist → analysts) against the dev servers, plus a CI job; (c) `gh repo create` + push (CI runs), then Lovable import via GitHub with `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`; (d) README architecture + run + deploy sections; (e) optional Supabase edge-function proxy if the API host needs hiding; (f) final checkpoint. Optional polish first: replace `window.prompt`/`confirm` in the dashboard toolbar with dialogs. Optional: `supabase link --project-ref agumrmsaeblcldcygajl` then `supabase test db --linked` for the pgTAP RLS tests.
 2. Optional: move `api/app/stock-tool.code-workspace` to the repo root (adjust `path` to `.`).
 3. Optional: `pip install pre-commit && pre-commit install`; `gh repo create` and push so CI runs (otherwise Phase 7).

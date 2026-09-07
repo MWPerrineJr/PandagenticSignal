@@ -35,7 +35,7 @@ export interface PriceChartProps {
   data: Indicators
   overlays: Set<OverlayId>
   className?: string
-  height?: number
+  height?: number | string
 }
 
 type LineApi = ISeriesApi<'Line'>

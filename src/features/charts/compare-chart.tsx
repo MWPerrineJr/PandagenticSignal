@@ -20,7 +20,7 @@ export interface CompareChartProps {
   series: NormalisedSeries[]
   interval: string
   className?: string
-  height?: number
+  height?: number | string
 }
 
 /** Normalised % change lines, one categorical hue per symbol in fixed order, zero baseline. */

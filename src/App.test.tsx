@@ -41,7 +41,7 @@ describe('routing', () => {
 describe('ticker flow', () => {
   it('shows an empty state without a ticker', () => {
     renderWithProviders(<AppRoutes />)
-    expect(screen.getByText(/no ticker selected/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/no ticker selected/i).length).toBeGreaterThan(0)
   })
 
   it('loads the quote card for ?t= and keeps the ticker across tabs', async () => {
@@ -63,7 +63,8 @@ describe('ticker flow', () => {
 
   it('shows a friendly 404 message for an unknown ticker', async () => {
     renderWithProviders(<AppRoutes />, { route: '/?t=NOPE' })
-    expect(await screen.findByRole('alert')).toHaveTextContent(/no data for NOPE/i)
+    const alerts = await screen.findAllByRole('alert')
+    expect(alerts.some((a) => /no data for NOPE/i.test(a.textContent ?? ''))).toBe(true)
   })
 
   it('tracks a ticker and lists it on the watchlist', async () => {
