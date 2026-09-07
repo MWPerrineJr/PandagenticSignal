@@ -10,7 +10,7 @@ Last updated: 2026-09-06
    - Data layer: **Python-first, Lovable later.** FastAPI + yfinance service in `api/`, React frontend at the repo root in Lovable's exact stack, import into Lovable via GitHub once the API is stable.
    - Persistence: **Supabase with user accounts** for watchlists and dashboard layouts.
 4. **Plan approved.** Eight phases (0–7) with a test checkpoint at the end of each. Full plan: `~/.claude/plans/elegant-imagining-mitten.md`.
-5. **Phase 0 started.** Repo initialised, frontend and API scaffolded, test tooling and CI written. Work paused before writing the pre-commit config and README, and before running either test suite.
+5. **Phase 0 complete.** Repo initialised, frontend and API scaffolded, shadcn installed, pre-commit + CI + README written, both test suites, typecheck and build verified green. Fixes along the way: removed deprecated `baseUrl` for TypeScript 6, switched Vite config to `import.meta.dirname`, removed Vite scaffold assets.
 
 ## Repository state
 
@@ -34,17 +34,17 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, vitest 5, MSW
 - [x] Test deps: vitest, @testing-library/react + jest-dom + user-event, jsdom, msw; `src/test/setup.ts` with MSW server
 - [x] Smoke test `src/App.test.tsx`
 - [x] `npm` scripts: dev, build, typecheck, lint, test, test:coverage
-- [ ] `npx shadcn@latest init` (theme tokens such as `bg-background` are referenced in `App.tsx` but not yet defined)
+- [x] `npx shadcn@latest init` (Base UI, Geist font, theme tokens, `components/ui/button.tsx`, `lib/utils.ts`)
 - [x] `uv init api --python 3.12`; deps fastapi, uvicorn, yfinance, pandas, numpy, scipy, cachetools, pydantic-settings; dev deps pytest, pytest-cov, pytest-asyncio, httpx, ruff
 - [x] `pyproject.toml` pytest config (integration marker excluded by default), coverage `fail_under = 80`, ruff rules
 - [x] `app/main.py` with `create_app()`, CORS, `GET /health`; `app/settings.py` (env prefix `STOCK_API_`)
 - [x] `tests/conftest.py` TestClient fixture; `tests/unit/test_health.py`
 - [x] `.env.example` for both frontend and API
 - [x] `.github/workflows/ci.yml` — api job (ruff, pytest+cov), web job (lint, typecheck, vitest, build), weekly scheduled live-integration job
-- [ ] `.pre-commit-config.yaml` (write was interrupted, not created)
-- [ ] `README.md`
-- [ ] **Test checkpoint:** run `cd api && uv run pytest` and `npm test`, `npm run typecheck`, `npm run build` — not yet executed
-- [ ] Initial git commit
+- [x] `.pre-commit-config.yaml`
+- [x] `README.md`
+- [x] **Test checkpoint:** ruff clean, pytest 1/1 with 100% coverage; oxlint clean (1 shadcn warning), tsc clean, vitest 1/1, vite build OK
+- [x] Initial git commit `b71a2fd`; Phase 0 closed in the following commit
 
 ### Phase 1 — Data API (FastAPI + yfinance)
 - [ ] `services/cache.py` TTL cache
@@ -99,7 +99,5 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, vitest 5, MSW
 
 ## Next actions
 
-1. Run `npx shadcn@latest init -d` to add theme tokens and `components/ui`.
-2. Write `.pre-commit-config.yaml` and `README.md`.
-3. Run both test suites and the typecheck/build to close the Phase 0 checkpoint.
-4. Make the initial commit and start Phase 1.
+1. Start Phase 1: cache, market_data wrapper, indicator and level services with fixture-based unit tests, then the routers.
+2. Optional: `pip install pre-commit && pre-commit install` to enable the per-commit hooks locally.
