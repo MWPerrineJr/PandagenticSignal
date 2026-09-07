@@ -19,7 +19,9 @@ Last updated: 2026-09-07
 11. **Phase 1 checkpoint (see below).** ruff clean, 60 unit tests pass, coverage 99% (`fail_under` 80), 7/7 live integration tests pass in ~4 s. First live run had 2 transient failures (Yahoo throttling made `history` return empty → 404, and `recommendations_summary` came back empty); a rerun was clean. Frontend checks unchanged and green.
 12. **Phase 2 built (2026-09-07).** shadcn `input`, `badge`, `card`, `skeleton` added (plus `cmdk` for the combobox; the shadcn `command`/`popover`/`dialog` wrappers were removed as unused). Typed API client with zod schemas mirroring the Python models, react-query hooks, ticker-in-URL hook (`?t=`), zustand tracked-tickers store (localStorage), dark-default `ThemeProvider`, app shell with four routed tabs that preserve the query string, `TickerSearch` combobox, dashboard `QuoteCard`, placeholder Charts/Analysts pages, Watchlist listing the tracked symbols.
 13. **Phase 2 checkpoint.** tsc clean, oxlint clean (only the shadcn fast-refresh warnings), vitest 38/38, coverage 90% on `src/lib` + `src/features`, vite build OK. Verified in Chrome against the live API: dashboard quote for AAPL, search "nv" → Enter selects NVDA and updates URL + quote, Track → Watchlist shows NVDA, theme toggle works, no console errors.
-14. **Bug found only in the browser, fixed.** cmdk keeps its highlighted value from the previous result set, so after typing "n" (highlight NSAIR) then "v", nothing was highlighted and Enter did nothing. Fix: the highlight is derived per result set (first result by default, arrow keys override) and the component owns the Enter key. Tests added for the two-query sequence and arrow-key selection.
+14. **Phase 2 combobox bug found only in the browser, fixed.** cmdk keeps its highlighted value from the previous result set, so after typing "n" (highlight NSAIR) then "v", nothing was highlighted and Enter did nothing. Fix: the highlight is derived per result set (first result by default, arrow keys override) and the component owns the Enter key. Tests added for the two-query sequence and arrow-key selection.
+15. **Phase 3 built (2026-09-07).** `lightweight-charts` 5.2.1 (v5 API: `addSeries(CandlestickSeries | LineSeries | HistogramSeries)`, `createPriceLine`, `subscribeCrosshairMove`). Pure mapping layer `src/lib/chart-data.ts` (type-only import of `Time`), URL-backed `useChartParams` (`period`, `interval`, `ov`), theme palettes, `PriceChart` (candles + volume pane + EMA lines + Bollinger dashed lines + S/R price lines labelled `S ×n`/`R ×n` + crosshair legend), `ChartControls` (period/interval radiogroups, overlay toggle buttons), `ChartsPage` wired to `useIndicators`. Charts route is lazy-loaded so the chart library lives in its own chunk (179 kB, main bundle unchanged).
+16. **Phase 3 checkpoint.** tsc + oxlint clean, vitest 64/64, coverage 95% (`src/lib` + `src/features`), build OK without the chunk-size warning. Verified in Chrome against the live API: AAPL 1Y daily renders all overlays; hovering updates the legend OHLC/EMA/BB values; toggling Bollinger removes the three lines; 6M + Weekly refetches and the URL carries `period`, `interval`, `ov`; light theme restyles the chart; no console errors.
 
 ## Repository state
 
@@ -36,12 +38,14 @@ stock-tool/                                   git main (revert points: b71a2fd, 
     components/ui/{button,input,badge,card,skeleton}.tsx
     features/search/ticker-search.tsx (+test)
     features/quote/quote-card.tsx
-    features/{dashboard,charts,watchlist,analysts}/*-page.tsx
+    features/charts/{charts-page,price-chart,chart-controls}.tsx (+tests)
+    features/{dashboard,watchlist,analysts}/*-page.tsx
     features/empty-ticker.tsx
     lib/api.ts (zod schemas + fetchers)  lib/queries.ts (hooks)  lib/use-ticker.ts
+    lib/chart-data.ts (API rows → series)  lib/use-chart-params.ts  lib/chart-theme.ts
     lib/use-debounce.ts  lib/format.ts  lib/utils.ts  (+tests)
     stores/tickers.ts (+test)
-    test/{setup,server,handlers,fixtures}.ts  test/render.tsx
+    test/{setup,server,handlers,fixtures}.ts  test/render.tsx  test/chart-mock.ts
   api/
     pyproject.toml  uv.lock  .python-version  .env.example  README.md (endpoint reference)
     app/{__init__,main,settings,deps,errors,schemas}.py
@@ -63,6 +67,7 @@ Commits:
 | `754f1ea`, `ebf26f7` | User: session.md tweak, VS Code workspace file |
 | `aa8bebd` | Phase 1 closed: data API |
 | `b9214ab` | Phase 2 closed: frontend foundation and ticker search |
+| (next) | Phase 3 closed: Charts tab |
 
 Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base UI), vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, pandas 3.0.5. GitHub CLI authenticated; no remote configured yet.
 
@@ -106,11 +111,12 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] **Test checkpoint:** vitest 38/38 (TickerSearch with MSW, schema parsing, hooks, routing, store), tsc + oxlint clean, build OK, live browser check
 
 ### Phase 3 — Charts tab with technical indicators
-- [ ] lightweight-charts candlestick + volume
-- [ ] Overlays: EMA 10/30/60/90, Bollinger Bands, support/resistance lines
-- [ ] Period / interval / toggle controls persisted in URL
-- [ ] Crosshair tooltip
-- [ ] Test checkpoint
+- [x] lightweight-charts candlestick + volume histogram pane
+- [x] Overlays: EMA 10/30/60/90 (distinct colours), Bollinger Bands (dashed upper/lower, dotted middle), support/resistance price lines labelled with touch count
+- [x] Period (1M–5Y) / interval (Daily, Weekly) / overlay toggles persisted in URL (`period`, `interval`, `ov`; defaults omitted)
+- [x] Crosshair legend with OHLC, volume and active indicator values
+- [x] Lazy-loaded route (chart library in its own chunk)
+- [x] **Test checkpoint:** vitest 64/64 (mapping helpers, URL round-trip, chart component against a mocked chart lib, page with MSW), tsc + oxlint clean, build OK, live browser check
 
 ### Phase 4 — Multi-stock tracking and Analysts tab
 - [ ] Watchlist tab (localStorage until Phase 5)
@@ -148,10 +154,13 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 
 - The shadcn Base UI components import `cn` from the `cn` npm package rather than `@/lib/utils`; both exist, app code uses `@/lib/utils`.
 - Retry policy lives on the app `QueryClient` (`makeQueryClient`), not on hooks, so tests can disable it. 404s are never retried.
+- Bollinger Bands are drawn as three lines, not a filled band; a fill needs a custom series primitive in lightweight-charts v5. Revisit if wanted.
+- Daily chart times are `yyyy-mm-dd` computed from the UTC timestamp shifted by +12 h, which is correct for exchange offsets in (−12 h, +12 h]. NZ/Kiribati summer time (+13/+14) would be off by a day; fix by emitting a local date from the API if it matters.
+- With short windows (e.g. 1M daily, 6M weekly) support/resistance has few extrema and mostly `×1` levels; the API's `order=5` could scale with bar count later.
 - The combobox renders cmdk primitives directly with an absolutely positioned panel (no Base UI Popover) so focus and jsdom behave predictably.
 
 ## Next actions
 
-1. **Phase 3** — Charts tab: `npm i lightweight-charts`, candlestick + volume from `useHistory`/`useIndicators`, overlays for EMA 10/30/60/90, Bollinger Bands, support/resistance price lines; period/interval/overlay toggles in URL params (`useTicker`-style hook); crosshair tooltip. Convert `time` (Unix s) to `yyyy-mm-dd` business days for daily+ intervals. lightweight-charts needs a canvas mock in jsdom (test the data-transform layer and controls; smoke-test the chart with a mocked `createChart`). To run locally: `cd api && uv run uvicorn app.main:app --reload` and `npm run dev`.
+1. **Phase 4** — Multi-stock tracking and Analysts tab: Watchlist rows with live quotes via `useQuotes` (price, change, sparkline optional), compare mode (normalised % change lines for up to 5 tracked tickers, reuse `PriceChart` patterns with `LineSeries` or a small `CompareChart`), Analysts tab from `useRecommendations` (stacked bar of strong buy/buy/hold/sell/strong sell per month, price-target gauge low/mean/high vs current, upgrades/downgrades table). Load the `dataviz` skill before building the analyst charts. To run locally: `cd api && uv run uvicorn app.main:app --reload` and `npm run dev`.
 2. Optional: move `api/app/stock-tool.code-workspace` to the repo root (adjust `path` to `.`).
 3. Optional: `pip install pre-commit && pre-commit install`; `gh repo create` and push so CI runs (otherwise Phase 7).

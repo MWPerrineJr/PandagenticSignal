@@ -4,6 +4,8 @@ import { renderWithProviders } from '@/test/render'
 import { AppRoutes } from '@/app/routes'
 import { useTickerStore } from '@/stores/tickers'
 
+vi.mock('lightweight-charts', () => import('@/test/chart-mock'))
+
 beforeEach(() => {
   useTickerStore.getState().clear()
   localStorage.clear()
@@ -15,9 +17,9 @@ describe('routing', () => {
     ['/charts', 'Charts'],
     ['/watchlist', 'Watchlist'],
     ['/analysts', 'Analysts'],
-  ])('renders %s with the %s heading', (route, heading) => {
+  ])('renders %s with the %s heading', async (route, heading) => {
     renderWithProviders(<AppRoutes />, { route })
-    expect(screen.getByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: heading })).toHaveAttribute('aria-current', 'page')
   })
 
@@ -46,8 +48,8 @@ describe('ticker flow', () => {
     renderWithProviders(<AppRoutes />, { route: '/?t=aapl' })
     expect(await screen.findByText('$200.00')).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: 'Charts' }))
-    expect(screen.getByRole('heading', { level: 1, name: 'Charts' })).toBeInTheDocument()
-    expect(screen.getByText('AAPL', { selector: 'span' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: /^Charts\s*AAPL/ })).toBeInTheDocument()
+    expect(await screen.findByTestId('price-chart')).toBeInTheDocument()
   })
 
   it('selecting from search updates the URL-driven quote', async () => {
