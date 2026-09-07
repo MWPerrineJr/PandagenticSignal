@@ -91,7 +91,7 @@ Commits:
 | `f3f0b3f` | Phase 3 closed: Charts tab |
 | `1c7e736` | Phase 4 closed: watchlist, compare mode, Analysts tab |
 | `6d1f4b7` | Phase 5 closed: Supabase auth and persistence |
-| (next) | Phase 6 closed: customizable dashboard |
+| `436b5c9` | Phase 6 closed: customizable dashboard |
 
 Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base UI), vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, pandas 3.0.5. GitHub CLI authenticated; no remote configured yet.
 
