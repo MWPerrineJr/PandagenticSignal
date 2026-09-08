@@ -36,6 +36,8 @@ Last updated: 2026-09-08
 
 28. **Lovable (2026-09-08).** The user created Lovable project **Stock UI Builder** (`553ee360-dd3b-43d1-93f9-254d89ad2fc0`) with the chat prompt "import code from https://github.com/MWPerrineJr/stock-tool.git and start building the ui". Lovable ported the frontend into its own project (~53 files "Created", one plan `.md`), and the preview at `https://id-preview--553ee360-dd3b-43d1-93f9-254d89ad2fc0.lovable.app` renders Dashboard/Charts/Watchlist/Analysts in the repo's style. **It is a copy, not a GitHub link:** nothing was pushed to `MWPerrineJr/stock-tool` and no Lovable branch exists, so the two codebases will diverge unless the project is connected to GitHub (Lovable Settings → GitHub) or re-created via the dashboard's *Import from GitHub*. Lovable then asked for the API URL and the Supabase URL + publishable key (env not set yet; the preview shows empty data). Lovable's preview and published sites use different `*.lovable.app` subdomains, and the API's CORS was exact-match only → added `STOCK_API_CORS_ORIGIN_REGEX` (`allow_origin_regex`), default off, set to `https://.*\.lovable\.app` in `render.yaml`; test covers preview + published + localhost + a spoof host. pytest 70/70.
 
+29. **Lovable, take two (2026-09-08).** The user created a fresh Lovable project **Blank Canvas Starter** (`e3a0dc1d-d931-425b-9c2e-cf064d043593`), connected GitHub (Lovable created **`MWPerrineJr/blank-canvas-starter`**), then merged the whole `stock-tool` history into it (`147b2cd`, plus a regenerated `package-lock.json`). Every synced commit showed "Build unsuccessful" because Lovable builds with `bun run build:dev` and the merge had kept our `package.json` (no `build:dev`). Fixes pushed to **both** repos: `build:dev` script (`33df879` / `1f02ca2`), the scaffold's stale `bun.lock` removed so Lovable regenerates it. Lovable has no env-var UI, so the root **`.env` is now committed** with the public hosted values (Render API URL, Supabase URL, publishable key); local overrides live in the gitignored `.env.local` (created from the old `.env`); `.env.example` removed; `supabase.ts` also accepts `VITE_SUPABASE_PUBLISHABLE_KEY` (`bd50a26`). That broke CI (MSW handlers hardcoded `localhost:8000` while the app now defaulted to Render; masked locally because this shell exports `VITE_*`) → vitest `test.env` pinned to the local API and handlers reuse `API_URL` from `@/lib/api` (`a58a942`). CI green on both repos (stock-tool run 34248026857, blank-canvas-starter run 34248029180). **Verified in Chrome on the Lovable preview** (`https://id-preview--e3a0dc1d-….lovable.app`, private, needs Lovable's token): search AAPL → dashboard quote, chart with EMAs/Bollinger/S-R, analyst data, all served by Render (`/quote`, `/indicators`, `/recommendations` 200) with CORS via the regex; no console errors. The old copy project "Stock UI Builder" can be deleted. Local repo has a `lovable` remote and a scratch worktree on branch `lovable-main` used to merge `main` into the Lovable repo.
+
 ## Repository state
 
 ```
@@ -178,7 +180,7 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] Playwright E2E smoke (3 tests, live data) + weekly/dispatch CI job
 - [x] GitHub push (repo created by the user, public), CI green
 - [x] Render deploy from the blueprint (`STOCK_API_CORS_ORIGINS=http://localhost:5173` for now)
-- [~] Lovable import, env vars, Supabase integration — project exists as a copy (see note 28); env vars and GitHub link still to do
+- [x] Lovable import + env: GitHub-linked project (note 29), preview verified live. Supabase integration in Lovable not connected (not required: the app talks to Supabase directly)
 - [x] README with architecture, run, test and deploy instructions
 - [ ] Final test checkpoint: CI green on GitHub, Playwright against the deployed frontend
 
@@ -220,17 +222,19 @@ final checkpoint against the deployed frontend. Everything is committed and push
 **To resume locally:** `cd api && uv run uvicorn app.main:app --reload` and `npm run dev` (uses the local
 API per `.env`), or `VITE_API_URL=https://stock-tool-api-qg9s.onrender.com npm run dev` to use Render.
 
-**Next, in order (updated 2026-09-08):**
-1. User decides: keep the Lovable copy (and connect it to GitHub from Lovable's settings so edits
-   sync), or re-import via the dashboard's *Import from GitHub*. Either way, in Lovable set
-   `VITE_API_URL` = `https://stock-tool-api-qg9s.onrender.com` and `VITE_SUPABASE_URL` /
-   `VITE_SUPABASE_ANON_KEY` from local `.env` (Project settings → env vars, or paste into the chat),
-   and connect Lovable's Supabase integration to `stock-tool-dev`.
-2. Render picked up `STOCK_API_CORS_ORIGIN_REGEX` from `render.yaml` (verified live: the preview origin
-   gets a CORS header, CI run 34237868398 green). Then `E2E_BASE_URL=<lovable preview or published origin>
-   npx playwright test`.
-3. Close Phase 7 in this log: tick the last two checklist items, record the final checkpoint.
-4. Then the polish backlog, in rough priority: replace `window.prompt`/`confirm` in the dashboard
+**Next, in order (updated 2026-09-08, afternoon):**
+1. **Decide the canonical repo.** Two GitHub repos now hold the same code: `stock-tool` (Render deploys
+   from it, local `origin`) and `blank-canvas-starter` (Lovable syncs with it). Recommended: make
+   `blank-canvas-starter` canonical — rename it on GitHub (Lovable and Render track repos by id, so
+   renames are safe), point Render's service and the local `origin` at it, archive `stock-tool`.
+   Until then every push goes to both (`git push origin main`, then merge `main` into `lovable-main`
+   in the scratch worktree and push to `lovable`).
+2. User: click **Publish** in Lovable to get a public `*.lovable.app` URL (the preview is private).
+   Then `E2E_BASE_URL=<published origin> npx playwright test` for the final checkpoint.
+3. If magic-link / email sign-in is used from Lovable, add the Lovable origin(s) to Supabase Auth →
+   URL configuration (Site URL / redirect list).
+4. Close Phase 7 in this log: tick the last checklist item, record the final checkpoint.
+5. Then the polish backlog, in rough priority: replace `window.prompt`/`confirm` in the dashboard
    toolbar with dialogs; Bollinger band fill (custom primitive); scale S/R `order` with bar count;
    consider Yahoo's `recommendationKey` for the consensus label; `supabase link` + `supabase test db
    --linked` for the pgTAP tests; optionally split the main bundle further.
