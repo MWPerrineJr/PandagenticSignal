@@ -1,7 +1,9 @@
 import { http, HttpResponse } from 'msw'
 import { makeIndicators, quoteFixtures, recommendationsFixture, searchFixtures } from './fixtures'
 
-export const API_URL = 'http://localhost:8000'
+import { API_URL } from '@/lib/api'
+
+export { API_URL }
 
 const notFound = (symbol: string) => HttpResponse.json({ detail: `Unknown ticker: ${symbol}` }, { status: 404 })
 
