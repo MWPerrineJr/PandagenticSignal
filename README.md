@@ -31,7 +31,7 @@ Prerequisites: Node 24, [uv](https://docs.astral.sh/uv/), optionally the Supabas
 
 ```bash
 # Frontend  (http://localhost:5173)
-cp .env.example .env          # add the Supabase URL + publishable key to enable accounts
+echo 'VITE_API_URL=http://localhost:8000' > .env.local   # override the hosted API in .env
 npm install
 npm run dev
 
@@ -82,8 +82,8 @@ Build the image locally with `docker build -t stock-tool-api api && docker run -
 
 1. Push the repo to GitHub.
 2. In Lovable choose **Import from GitHub** and pick the repository (the Vite project is at the root).
-3. Add the environment variables: `VITE_API_URL` (the Render URL), `VITE_SUPABASE_URL`,
-   `VITE_SUPABASE_ANON_KEY` (the `sb_publishable_…` key).
+3. No env vars to enter: the committed root `.env` already points at the Render API and the
+   Supabase project. Lovable builds with `npm run build:dev`, which `package.json` provides.
 4. Connect Lovable's Supabase integration to the same project so `supabase/migrations` stays the
    single source of truth for the schema.
 5. `render.yaml` already sets `STOCK_API_CORS_ORIGIN_REGEX` to allow `*.lovable.app`; a custom
@@ -118,7 +118,11 @@ session.md           phase log
 
 ## Environment variables
 
-Frontend (`.env`): `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (leave the
-Supabase pair blank to run without accounts).
-API (`api/.env`, prefix `STOCK_API_`): `CORS_ORIGINS`, `CORS_ORIGIN_REGEX`, `RATE_LIMIT`, `RATE_LIMIT_ENABLED`,
-`LOG_FORMAT` (`text`|`json`), `LOG_LEVEL`, cache TTLs (see `api/app/settings.py`).
+Frontend: the root `.env` is **committed** and holds the hosted defaults (`VITE_API_URL` = the
+Render API, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` = the browser-safe publishable key).
+Lovable has no env-var UI, so this file is what its builds use. For local work put overrides in
+`.env.local` (gitignored), typically `VITE_API_URL=http://localhost:8000`; leave the Supabase pair
+blank there to run without accounts. `VITE_SUPABASE_PUBLISHABLE_KEY` (the name Lovable's Supabase
+connector writes) is accepted as an alias.
+API (`api/.env`, prefix `STOCK_API_`): `CORS_ORIGINS`, `CORS_ORIGIN_REGEX`, `RATE_LIMIT`,
+`RATE_LIMIT_ENABLED`, `LOG_FORMAT` (`text`|`json`), `LOG_LEVEL`, cache TTLs (see `api/app/settings.py`).
