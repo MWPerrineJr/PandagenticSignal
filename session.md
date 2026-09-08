@@ -1,6 +1,6 @@
 # Session Log — Stock Analysis Tool
 
-Last updated: 2026-09-08
+Last updated: 2026-09-08 (evening)
 
 ## Conversation summary
 
@@ -45,6 +45,8 @@ Last updated: 2026-09-08
 32. **Custom domain + suspension (2026-09-08).** Lovable published the site at **https://pandagenticsignal.com** (www redirects to it; Lovable committed `bun.lock` and a plan note "Purchased custom domain"). The CORS regex only covers `*.lovable.app`, so `render.yaml` now sets `STOCK_API_CORS_ORIGINS` to the custom domain (+ `www`) and the local dev origins (`532e8b9`, rebased onto Lovable's commits). Meanwhile the API returned 503 with `x-render-routing: suspend-by-user`: the user suspended the only service at 12:24 thinking it was "the old one" (there was only ever one), then resumed it. Resume redeployed `af53f4e`, so the CORS push had not deployed; a follow-up push triggers the deploy + blueprint sync.
 
 33. **Phase 7 closed (2026-09-08).** Pushes did not auto-deploy on Render after the resume, so "Deploy latest commit" was triggered by hand (94db5d6 live). The blueprint's env change also needed a **Manual sync** + Approve on the blueprint page (Render treats new env vars from `render.yaml` as an approval step). After that the API sends the CORS header for `https://pandagenticsignal.com`. **Final checkpoint:** `E2E_BASE_URL=https://pandagenticsignal.com npx playwright test` → 3/3 passed in 12.7 s against the published site + Render API + live Yahoo data. CI green on PandagenticSignal.
+
+34. **Expansion planned (2026-09-08 evening).** The user asked for four new sections: Crypto, Retirement analysis, Portfolio builder with Monte Carlo, and an AI news-sentiment agent. Explored the codebase, probed yfinance (crypto quotes/history/screener/news all work), loaded the Claude API skill, and confirmed four decisions with the user (yfinance news, on-demand + 1 h cache with `claude-opus-5`, retirement = projection + MC success probability, crypto tab + crypto everywhere). Plan approved as Phases 8–11; full text below under "Expansion plan" and at `~/.claude/plans/now-i-want-to-mighty-possum.md`. Nothing implemented yet.
 
 ## Repository state
 
@@ -217,6 +219,8 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 ## Pick up here
 
 **Where things stand (2026-09-08, end of day):** All phases 0–7 are closed. The app is live.
+**Tomorrow: start Phase 8 (Crypto)** from the "Expansion plan" section at the bottom of this file.
+Pull first (`git pull`), then follow the phase's API → frontend → tests → checkpoint order.
 
 **Live pieces:**
 - Site: https://pandagenticsignal.com (Lovable-published, custom domain; www redirects). Lovable project
@@ -251,3 +255,209 @@ pgTAP tests; split the main bundle further; retry in `MarketData._history` on tr
 3. Previous plan for reference — **Phase 7** — Hardening, deployment, Lovable import. Order: (a) API `Dockerfile` + `slowapi` rate limiting + CORS from env + `/health` used by the host; deploy to Render or Railway (user picks; needs an account and will ask for env vars `STOCK_API_CORS_ORIGINS`); (b) Playwright E2E smoke (search → chart → watchlist → analysts) against the dev servers, plus a CI job; (c) `gh repo create` + push (CI runs), then Lovable import via GitHub with `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`; (d) README architecture + run + deploy sections; (e) optional Supabase edge-function proxy if the API host needs hiding; (f) final checkpoint. Optional polish first: replace `window.prompt`/`confirm` in the dashboard toolbar with dialogs. Optional: `supabase link --project-ref agumrmsaeblcldcygajl` then `supabase test db --linked` for the pgTAP RLS tests.
 2. Optional: move `api/app/stock-tool.code-workspace` to the repo root (adjust `path` to `.`).
 3. Optional: `pip install pre-commit && pre-commit install`; `gh repo create` and push so CI runs (otherwise Phase 7).
+
+## Expansion plan (Phases 8–11, approved 2026-09-08)
+
+### Context
+
+Phases 0–7 are closed and live at https://pandagenticsignal.com (repo `MWPerrineJr/PandagenticSignal`,
+Lovable-linked; FastAPI + yfinance API on Render at https://stock-tool-api-qg9s.onrender.com; Supabase
+`stock-tool-dev`). The user wants four new sections:
+
+1. **Crypto** — dedicated tab plus crypto symbols working everywhere.
+2. **Portfolio builder + Monte Carlo** — mixed stock/crypto holdings, simulated wealth paths, risk stats; persisted like watchlists.
+3. **Retirement analysis** — deterministic projection plus Monte Carlo "probability your money lasts", sharing the engine.
+4. **AI news-sentiment agent** — on-demand Claude analysis of Yahoo Finance news for a stock or coin.
+
+Decisions confirmed 2026-09-08: news from yfinance `Ticker.news` (not web search); on-demand + 1 h server
+cache with `claude-opus-5` (~3–5 ¢ per analysis, key on Render); retirement = projection + MC success
+probability; crypto tab + crypto everywhere.
+
+Verified against yfinance 1.7 today: `fast_info` works for `BTC-USD` (quoteType `CRYPTOCURRENCY`,
+marketCap); `Search("bitcoin")` returns CRYPTOCURRENCY rows (currently dropped by `SEARCH_TYPES`);
+`Ticker.news` gives 10 items with `content.{title,summary,pubDate,provider.displayName,canonicalUrl.url}`;
+`yf.screen("all_cryptocurrencies_us", count=N)` returns top coins by market cap with
+price/change%/marketCap/volume/circulatingSupply; mixed stock+crypto closes have NaN on weekends for
+stocks (inner-join on common days).
+
+Two code facts that shape the design: `api/app/main.py` CORS has `allow_methods=["GET"]` (POST endpoints
+need `["GET","POST"]`), and `api/app/services/cache.py` runs the miss factory under one global `RLock`
+(a 10–30 s Claude call must use its own `Cache()` instance).
+
+### Order
+
+| Phase | Section | Why |
+|---|---|---|
+| 8 | Crypto | Smallest; unlocks crypto symbols in search/fakes/fixtures that Phase 9 needs; adds the shadcn `table` primitive. |
+| 9 | Portfolio + Monte Carlo | Engine first, then endpoints/UI. Introduces POST + CORS change, per-prefix rate limiting (reused by 10 and 11), SVG fan chart (reused by 10). |
+| 10 | Retirement | Depends on Phase 9's parametric simulator and fan chart. |
+| 11 | AI sentiment | Independent of 8–10 (disjoint files). Last only because it needs a paid secret + Render blueprint sync. Can be swapped to run right after 8 (then build the per-prefix limiter inside 11). |
+
+Every phase ends with the checkpoint: `cd api && uv run ruff check . && uv run ruff format --check . && uv run pytest --cov`
+→ `npm run lint && npm run typecheck && npm test && npm run build` → session.md entry → commit + push `main`
+→ Render check (`/health` + the new endpoint; Manual Deploy → "Deploy latest commit" if auto-deploy stalls;
+new env keys need blueprint Manual sync + Approve) → `E2E_BASE_URL=https://pandagenticsignal.com npx playwright test`.
+Pull before starting (Lovable commits to `main`); never rewrite pushed history.
+
+---
+
+### Phase 8 — Crypto
+
+**Goal:** "Crypto" tab with a top-coins table (price, 24h %, market cap, volume, 1M sparkline) and a coin
+detail panel; `BTC-USD`-style symbols work in search, watchlist, charts, dashboard.
+
+### API
+- `GET /crypto/top?limit=25` (1..100) → `{ as_of: epoch_s, coins: [{symbol, name, price, change_pct, market_cap, volume, circulating_supply}] }`.
+- `api/app/services/market_data.py`: `SEARCH_TYPES = {"EQUITY","ETF","CRYPTOCURRENCY"}`; `top_crypto(limit=25) -> list[CryptoQuote]` via `self._call(self.yf.screen, "all_cryptocurrencies_us", count=limit)`, cache ns `"crypto_top"`, TTL `settings.crypto_ttl` (60); map with existing `_num/_int/_str`. Add `quote_type: str | None` to `Quote` from `fast_info["quote_type"]` so the quote card can label "Crypto" / "24h".
+- `api/app/schemas.py`: `CryptoQuote`, `CryptoTop`. `api/app/routers/crypto.py` (`APIRouter(tags=["crypto"])`, `limit: Query(ge=1, le=100)`), registered in the `create_app` tuple. `settings.crypto_ttl`.
+- Sparklines reuse `/history/{symbol}?period=1mo&interval=1d`.
+
+### Frontend
+- `src/lib/api.ts`: `cryptoQuoteSchema`, `cryptoTopSchema`, `api.cryptoTop`. `src/lib/format.ts`: `formatPrice` shows 4–6 decimals under $1.
+- `src/lib/queries.ts`: `queryKeys.cryptoTop(limit)`, `useCryptoTop(limit)` (staleTime + refetchInterval MINUTE).
+- `src/app/routes.tsx`: lazy `CryptoPage`; `NAV_ITEMS += { to: '/crypto', label: 'Crypto' }` in `src/components/layout/app-shell.tsx`.
+- `src/features/crypto/crypto-page.tsx` (h1, Skeleton → alert → table ladder), `market-table.tsx` (rows `data-testid="row-BTC-USD"`, click sets `?t=` via `useTicker`, track toggle via `useWatchlist`, `Sparkline` from `features/watchlist/sparkline.tsx`), `coin-detail.tsx` (QuoteCard + lazy `PriceChart` via `useIndicators` + a `SentimentSlot` placeholder filled in Phase 11). Install `npx shadcn@latest add table` (Base UI components import `cn` from the `cn` package).
+- Widget `crypto` (top-N compact rows): `WIDGET_TYPES += 'crypto'`, config `{ limit: int 1..20 default 5 }`, size `{w:4,h:8,minW:3,minH:5}`, title "Crypto market", `widgets/crypto-widget.tsx` + registry entry.
+- Search combobox: "Crypto" type badge for `CRYPTOCURRENCY` results.
+
+### Tests
+- Python: `tests/fakes.py` → `FakeYF.screen(query, count)` fixture (BTC-USD, ETH-USD), `FAST_INFO["BTC-USD"]`, a CRYPTOCURRENCY row in `SEARCH_QUOTES`; `test_market_data.py` (top_crypto maps/caches/limits, search includes crypto, quote BTC-USD); `test_routers.py` (`/crypto/top` shape, `limit=0`/`500` → 422, upstream → 502).
+- Frontend: `fixtures.ts` `cryptoTopFixture` + `quoteFixtures['BTC-USD']`; `handlers.ts` `GET /crypto/top`; `crypto-page.test.tsx`, `crypto-widget.test.tsx`; registry/layout/use-watchlist tests updated.
+- e2e: Crypto tab → `row-BTC-USD` with `$` price → click → `price-chart` visible → search "bitcoin" picks `BTC-USD`.
+
+### Deploy
+- No env changes. Verify `curl .../crypto/top?limit=3` and `/search?q=bitcoin` on Render.
+
+---
+
+### Phase 9 — Portfolio builder + Monte Carlo
+
+**Goal:** Holdings (stocks + crypto), summary stats, correlated Monte Carlo fan chart; portfolios persist
+local (signed out) / Supabase (signed in).
+
+### Engine — `api/app/services/portfolio.py` (pure numpy/pandas)
+- `align_closes(frames: dict[str, pd.Series]) -> pd.DataFrame` (inner join, dropna; `ValueError` if < 30 rows).
+- `log_returns(closes) -> pd.DataFrame`; `shrink_covariance(cov, n_obs, *, shrinkage=None)` (Ledoit-Wolf-style toward the diagonal, default on when > 5 assets).
+- `portfolio_stats(returns, weights, *, periods_per_year=252) -> PortfolioStats` — annual return/vol, Sharpe (rf 0), max drawdown, per-asset return/vol, correlation matrix.
+- `choose_step(horizon_years) -> (steps_per_year, n_steps)` — daily ≤ 2y, weekly ≤ 10y, monthly beyond (keeps `n_steps ≤ ~520`; 40y daily × 10k sims × 20 assets is infeasible on the free Render instance); scale `mu`/`cov` by `252/steps_per_year`.
+- `simulate_portfolio(mu, cov, weights, *, initial, n_steps, n_sims, cashflow_per_step=0.0, seed=None) -> np.ndarray (n_sims, n_steps+1)` — Cholesky (eigh-clip fallback), per-step vectorised draws, rebalanced `value *= w · exp(r)`.
+- `simulate_parametric(mu_annual, sigma_annual, *, initial, cashflows, steps_per_year, n_sims, seed=None, floor_at_zero=True)` — single-asset GBM with per-step cashflows (Phase 10 reuses).
+- `downsample_indices(n_steps, max_points=260)`; `summarise_paths(paths, *, initial, steps_per_year, max_points=260, percentiles=(5,25,50,75,95)) -> PathSummary` — `times`, `bands`, terminal `{mean, median, p5, p25, p75, p95, prob_loss, var_95, var_95_pct, cvar_95}`.
+- `MarketData.closes(symbols, period) -> pd.DataFrame` reusing `self.history(sym, period, "1d")` + `align_closes` (history cache + existing 404s; `yf.download` batching noted as a later optimisation).
+
+### API
+- CORS `allow_methods=["GET","POST"]`.
+- Rate limiting, `api/app/ratelimit.py`: `RateLimiter(rule, *, overrides: dict[str,str] | None = None, enabled=True)`; single strategy; `_rules` = overrides by longest prefix first + `("", default)`; `_match(path)`; `hit(scope, ip)` keys storage `f"{scope}:{ip}"`; middleware unchanged otherwise (headers reflect the matched rule). `main.py`: overrides `{"/portfolio/simulate": settings.simulate_rate_limit, "/retirement": settings.simulate_rate_limit, "/sentiment": settings.sentiment_rate_limit}`. `settings.simulate_rate_limit = "30/minute"`.
+- `POST /portfolio/analyse` body `{ holdings: [{symbol, weight} | {symbol, amount}] (1..20, one mode), period: "1y"|"2y"|"5y" }` → `{ symbols, weights, period, start, end, n_obs, annual_return, annual_vol, sharpe, max_drawdown, assets:[{symbol, weight, annual_return, annual_vol}], correlation: number[][] }`.
+- `POST /portfolio/simulate` body = analyse + `{ horizon_years 1..40, n_sims 100..10000 (2000), initial_value (10000), monthly_contribution (0), seed? }` → `{ initial_value, horizon_years, steps_per_year, n_sims, times, bands:{p5,p25,p50,p75,p95}, terminal, stats }`.
+- `api/app/routers/portfolio.py`; schemas `Holding`, `PortfolioRequest`, `SimulateRequest`, `PortfolioStatsOut`, `SimulationOut` with validators. Unknown symbol → 404; too few aligned rows → 422.
+
+### Frontend
+- `src/lib/portfolio.ts` (pure): `MAX_HOLDINGS = 20`, `holdingSchema`, `portfolioSchema {id, name, holdings, updatedAt}`, `normaliseHoldings`, `weightsFromAmounts`, `holdingsKey`, `starterPortfolio()`.
+- `src/lib/api.ts`: `postJson(path, schema, body, init)`; `portfolioStatsSchema`, `simulationSchema`; `api.portfolioAnalyse`, `api.portfolioSimulate`. `queries.ts`: `usePortfolioStats(holdings, period)`, `useSimulation(params, {enabled})` (runs only after "Run simulation"); `retryUnlessNotFound` also stops on 422/429.
+- Persistence mirroring `use-dashboard`: `src/stores/portfolios.ts` (`persist` `stock-tool.portfolios`, `{portfolios, activeId}`), `src/lib/portfolio-repo.ts` (`listPortfolios`, `savePortfolio` upsert on id, `deletePortfolio`), `src/lib/use-portfolios.ts` (local vs cloud, `SAVE_DEBOUNCE_MS` + `flush`, one-time import flag `stock-tool.portfolios.imported:${userId}`).
+- Page `src/features/portfolio/portfolio-page.tsx` (route `/portfolio`, nav "Portfolio"): `portfolio-picker.tsx` (select + new/rename/delete like the dashboard toolbar), `holdings-editor.tsx` (shadcn table, `TickerSearch` to add, weight/amount toggle, Normalise), `stats-cards.tsx` (KPI cards), `correlation-matrix.tsx` (SVG heatmap, diverging palette, `role="figure"`, table toggle), `simulation-controls.tsx`, `fan-chart.tsx` (SVG percentile polygons + median, table toggle; SVG because lightweight-charts has no band fill and SVG is jsdom-testable), `terminal-stats.tsx`.
+- Widget `portfolio`: config `{ portfolioId: string | null }` (null = active); name, top holdings, return/vol; size `{w:4,h:8}`.
+
+### Supabase — `supabase/migrations/20260909120000_portfolios.sql`
+- `public.portfolios (id uuid pk, user_id uuid fk cascade, name text check 1..60, holdings jsonb array ≤ 20 items, created_at, updated_at, unique(user_id,name))`; index `user_id`; `set_updated_at` trigger; RLS + four owner policies `user_id = (select auth.uid())`. No RPC (upsert on id like `dashboard_layouts`). Apply via the Supabase MCP connector to `agumrmsaeblcldcygajl`, commit the file, add `supabase/tests/0002_portfolios.test.sql` (pgTAP). Retirement inputs stay in localStorage (no table).
+
+### Tests
+- Python `tests/unit/test_portfolio.py`: alignment drops non-overlapping rows; closed-form stats on a constant-return series; simulated correlation ≈ input (seeded); seed determinism; downsample ≤ 260; bands monotonic; `prob_loss ∈ [0,1]`; parametric `sigma=0` compounds exactly; cashflow floor. `test_routers.py`: 0/21 holdings, mixed modes, `n_sims=20000` → 422; unknown symbol → 404; seeded response stable. `test_hardening.py`: `/portfolio/simulate` override trips independently of `/quote`. `test_market_data.py`: `closes()` mixed set.
+- Frontend: `portfolio.test.ts`, `portfolio-repo.test.ts`, `use-portfolios.test.tsx` (local + cloud + import-once), `fan-chart.test.tsx`, `portfolio-page.test.tsx`, `portfolio-widget.test.tsx`; MSW `POST /portfolio/analyse|simulate` + fixtures; `supabase-mock.ts` gains `portfolios` table + `seedPortfolio()`.
+- e2e: Portfolio tab → add AAPL + BTC-USD → KPI text → Run → "simulated wealth" figure → reload keeps holdings.
+
+### Deploy
+- `render.yaml`: `STOCK_API_SIMULATE_RATE_LIMIT=30/minute` (new key → Manual sync + Approve). Verify a POST from the site passes CORS and returns bands.
+
+---
+
+### Phase 10 — Retirement
+
+**Goal:** Inputs → deterministic nest-egg chart + Monte Carlo success probability; assumptions parametric
+or derived from a saved portfolio.
+
+### Engine — `api/app/services/retirement.py`
+- `RetirementInputs(current_age, retirement_age, life_expectancy, current_savings, monthly_contribution, expected_return, inflation, annual_spending)` (spending in today's dollars, inflation-adjusted withdrawals).
+- `cashflows(inputs) -> np.ndarray` (yearly: +12×contribution before retirement, −spending×(1+inflation)^t after).
+- `project_deterministic(inputs) -> list[YearPoint{age, year, balance_nominal, balance_real, cashflow}]` (floor 0).
+- `simulate_retirement(inputs, *, mu, sigma, n_sims, seed) -> RetirementSim` via `portfolio.simulate_parametric(steps_per_year=1)`: `success_probability`, real-terms bands per age, `median_depletion_age | None`, terminal via `summarise_paths`.
+
+### API
+- `POST /retirement/project` body = inputs + `{ mode: "parametric"|"portfolio", volatility? (0.12), holdings?, period? ("2y"), n_sims (2000, ≤10000), seed? }` → `{ assumptions:{mu, sigma, source}, deterministic:[YearPoint], monte_carlo:{ success_probability, ages, bands, median_depletion_age, terminal } }`. Validation `current_age < retirement_age < life_expectancy ≤ 110`, rates in [−0.5, 0.5]. Portfolio mode derives mu/sigma from `portfolio_stats(MarketData.closes(...))`. Covered by the `/retirement` limiter override.
+- `api/app/routers/retirement.py`; schemas `RetirementRequest`, `YearPoint`, `RetirementOut`.
+
+### Frontend
+- `src/lib/retirement.ts`: TS twin of the deterministic projection for instant slider feedback, pinned to Python by a committed parity fixture `src/test/fixtures/retirement-parity.json` (generated from the Python function); `retirementInputsSchema` with defaults.
+- `src/stores/retirement.ts` (`persist` `stock-tool.retirement`) — localStorage only.
+- `src/features/retirement/retirement-page.tsx` (route `/retirement`, nav "Retirement"): `retirement-form.tsx` (install `npx shadcn@latest add slider`; sliders + number inputs; assumptions source select incl. "Use portfolio…" from `usePortfolios`), `nest-egg-chart.tsx` (SVG nominal + real lines, retirement-age marker, table toggle), `success-card.tsx`, reuse `features/portfolio/fan-chart.tsx` with `xLabels = ages`, "Run Monte Carlo" → `useRetirementProjection(params, {enabled})`. Disclaimer: illustrative only.
+- `api.ts` `retirementOutSchema`, `api.retirementProject`; `queries.ts` `useRetirementProjection`.
+
+### Tests
+- Python `tests/unit/test_retirement.py`: zero return/inflation arithmetic; contributions stop at retirement; withdrawals inflate; floor; `sigma=0` sufficient → 1.0, insufficient → 0.0; seed determinism; misordered ages → 422; portfolio mode with fakes returns `source="portfolio"`.
+- Frontend: `retirement.test.ts` (parity), `retirement-page.test.tsx`, MSW `POST /retirement/project`.
+- e2e: Retirement tab → change retirement age → nest-egg figure → Run → `%` probability text.
+
+### Deploy
+- No new env. Verify POST on Render; p50 band ≈ deterministic path when `sigma≈0`.
+
+---
+
+### Phase 11 — AI news-sentiment agent
+
+**Goal:** On-demand, 1 h-cached Claude analysis of Yahoo news for a symbol; never advice; disabled
+cleanly without a key.
+
+### Dependencies / config
+- `api/pyproject.toml`: `anthropic>=1.0` → `uv lock` (SDK 1.x uses `httpx2`; dev `httpx` for TestClient coexists — confirm at lock time).
+- `settings.py`: `anthropic_api_key: str = ""`, `sentiment_model = "claude-opus-5"`, `sentiment_max_tokens = 4096`, `sentiment_ttl = 3600`, `news_ttl = 900`, `sentiment_rate_limit = "10/minute"`.
+- `render.yaml`: `STOCK_API_ANTHROPIC_API_KEY` with `sync: false` (value set in the Render dashboard after Manual sync + Approve); `STOCK_API_SENTIMENT_RATE_LIMIT=10/minute`.
+
+### Services
+- `MarketData.news(ticker) -> list[NewsItem{title, summary, published_at, provider, url}]` from `Ticker.news` `item["content"]`; cache ns `"news"`, TTL `news_ttl`; empty list valid (validate the symbol via `quote()` only when empty, like recommendations).
+- `api/app/services/sentiment.py`:
+  - `SentimentReport(BaseModel)`: `overall: Literal["bullish","neutral","bearish"]`, `score: float` (−1..1), `confidence: float` (0..1), `themes: list[str]`, `articles: list[ArticleSentiment{index, sentiment, rationale}]`, `summary: str`. Bounds stated in the prompt and clamped after parse (keep the `output_format` model plain).
+  - `SYSTEM_PROMPT` constant (role; no investment advice or price predictions; neutral when evidence is thin; 3–5 themes; one-sentence rationales) sent as `system=[{"type":"text","text":SYSTEM_PROMPT,"cache_control":{"type":"ephemeral"}}]`; all volatile content (symbol, articles) in the user message.
+  - `build_user_message(symbol, news) -> str` (numbered articles, summaries ≤ ~600 chars).
+  - `SentimentAgent(client: anthropic.Anthropic | None, *, model, max_tokens, cache: Cache, ttl)`; `enabled`; `analyse(symbol, news) -> SentimentReport` via `client.messages.parse(model=..., max_tokens=..., system=[...], messages=[...], output_format=SentimentReport)`; `stop_reason == "refusal"` or `parsed_output is None` → `UpstreamError`; `anthropic.RateLimitError` → `RateLimitedError` (503); `APIStatusError`/`APIConnectionError` → `UpstreamError` (502). Client `timeout=60.0, max_retries=1`. Optional later: server-side refusal fallbacks (`fallbacks="default"`, beta header) once the happy path is verified.
+  - `report(symbol, news)` cached in the agent's **own `Cache()`** instance (`"sentiment"`, `sentiment_ttl`) so a slow model call never blocks other endpoints and concurrent requests for one symbol de-duplicate spend.
+- `api/app/deps.py`: `get_sentiment_agent()` (`lru_cache`; client `None` when the key is empty), `SentimentAgentDep`.
+- Cache decision: server memory only; no `sentiment_reports` table (ephemeral, non-user-specific, no UX gain).
+
+### API
+- `GET /sentiment/status` → `{ enabled, model }`.
+- `GET /sentiment/{ticker}` → 503 `Sentiment analysis is not configured` when disabled; else `{ symbol, generated_at, model, cached, news_count, report | null (no news), articles:[{index, title, provider, published_at, url, sentiment, rationale}], disclaimer }`. GET keeps it cacheable; "on demand" = the frontend never auto-fetches.
+- `/sentiment` limiter override `10/minute`.
+
+### Frontend
+- `api.ts`: `sentimentStatusSchema`, `sentimentResponseSchema`, `api.sentimentStatus`, `api.sentiment`; `ApiError.isUnavailable` (503), `isRateLimited` (429); retry stops on 429/503. `queries.ts`: `useSentimentStatus()` (staleTime Infinity), `useSentiment(symbol, {enabled})` (staleTime HOUR, `retry: false`).
+- `src/features/sentiment/sentiment-panel.tsx`: "Analyse news sentiment" button (hidden when disabled), long-running loading state (10–30 s), result (overall `Badge`, diverging score bar, confidence, theme chips, per-article badge + rationale + link, summary, "generated at · cached"), fixed disclaimer "Automated summary of news tone, not investment advice", 429 → retry-after message.
+- `src/features/sentiment/sentiment-page.tsx` (route `/sentiment`, nav "Sentiment"; analysts-page template). Mount the panel in Phase 8's `coin-detail.tsx` slot.
+- Widget `sentiment`: config `{ symbol: symbolOrFollow }`; badge + score if cached, else a small "Analyse" button (never auto-fetches); size `{w:4,h:6}`.
+
+### Tests
+- Python: `tests/fakes.py` `FakeTicker.news` (AAPL 3 items in the `content` shape; MSFT `[]`); `tests/fake_anthropic.py` `FakeAnthropic` (`messages.parse(**kwargs)` records calls; returns a stub with `.parsed_output`/`.stop_reason`; configurable to raise `RateLimitError`/`APIStatusError` or return `refusal`); conftest `sentiment_agent` fixture + `get_sentiment_agent` override. `tests/unit/test_sentiment.py`: disabled → 503 + status false; happy path + clamping; second call cached (one recorded call); no news → `report: null`; refusal → 502; RateLimitError → 503; APIStatusError → 502; system block carries `cache_control`; user message contains all titles. `test_hardening.py`: `/sentiment` override at `1/minute`. `tests/integration/test_sentiment_live.py`: `integration` + skip unless `STOCK_API_ANTHROPIC_API_KEY`.
+- Frontend: `sentimentFixture`; MSW `GET /sentiment/status`, `GET /sentiment/:symbol`; `sentiment-panel.test.tsx` (hidden when disabled; click → result + disclaimer; 503 hidden; 429 message), `sentiment-page.test.tsx`, `sentiment-widget.test.tsx`; registry/layout tests.
+- e2e: Sentiment tab; read `/sentiment/status` via `page.request`; if disabled assert no button, else click and expect the badge within 60 s + disclaimer.
+
+### Deploy
+- Add the key in Render (Manual sync + Approve, then set the secret), redeploy; `curl .../sentiment/status` → `enabled: true`; one live `GET /sentiment/AAPL`, second call `cached: true`; 11th request in a minute → 429.
+
+---
+
+### Cross-cutting
+- `session.md`: one entry per phase with checkpoint output; README gains the four sections + env vars.
+- Coverage `fail_under = 80`: keep router glue thin, engines pure and fully tested.
+- MSW `onUnhandledRequest: 'error'`: add each handler in the same commit as the API client.
+- Polish backlog carried over: dialogs instead of `window.prompt/confirm`, Bollinger fill, S/R order scaling, Yahoo `recommendationKey`, pgTAP via `supabase test db --linked`, bundle splitting, `MarketData._history` retry.
+
+### Critical files
+- `api/app/services/market_data.py` (search types, `top_crypto`, `closes`, `news`)
+- `api/app/ratelimit.py` (per-prefix overrides, one middleware)
+- `api/app/main.py` (routers, CORS POST, limiter overrides, sentiment dependency)
+- `src/lib/api.ts` (zod schemas, `postJson`)
+- `src/lib/dashboard-layout.ts` + `src/features/dashboard/widgets/registry.tsx` (three new widgets)
+
+### Verification (end to end)
+- Per phase: ruff + pytest (coverage ≥ 80), oxlint + tsc + vitest + vite build, Playwright against the dev servers, commit/push, Render endpoint probe, Playwright against https://pandagenticsignal.com.
+- Final: all four tabs live on the site; dashboard shows Crypto, Portfolio and Sentiment widgets; a saved portfolio round-trips through Supabase; sentiment for AAPL and BTC-USD returns within 30 s and is served from cache on the second call.
