@@ -19,10 +19,11 @@ __pycache__/
 htmlcov/
 *.egg-info/
 
-# Environment
-.env
-.env.*
-!.env.example
+# Environment: the root .env is committed (public hosted defaults); local overrides and the
+# API's env stay private.
+.env.local
+.env.*.local
+api/.env
 
 # Playwright
 test-results/
