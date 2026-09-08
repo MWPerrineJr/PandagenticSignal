@@ -42,6 +42,8 @@ Last updated: 2026-09-08
 
 31. **Render re-pointed (2026-09-08).** Changing the service's source repo by hand first turned it into a Node service (Render re-detected the repo root: built the frontend, then `yarn start` failed; the old Docker deploy kept serving with 40–90 s cold starts). The user then applied the blueprint from PandagenticSignal: Render created blueprint instance **PandagenticSignal** which re-adopted the same service (`srv-dafjbtn40ujc73bi5nm0`, URL unchanged: https://stock-tool-api-qg9s.onrender.com), runtime back to Docker, deploy live for `af53f4e` at 11:43. The prompt for `STOCK_API_CORS_ORIGINS` did not appear (newer Render UI creates `sync: false` vars blank); harmless, the regex covers Lovable. Verified: CORS header for the Lovable preview origin, a published-style `*.lovable.app` origin and localhost; none for an unknown origin. The old blueprint instance "Pandagentic Signal" (repo `stock-tool`) is now orphaned: delete it in Render **without** deleting its resources, or leave it.
 
+32. **Custom domain + suspension (2026-09-08).** Lovable published the site at **https://pandagenticsignal.com** (www redirects to it; Lovable committed `bun.lock` and a plan note "Purchased custom domain"). The CORS regex only covers `*.lovable.app`, so `render.yaml` now sets `STOCK_API_CORS_ORIGINS` to the custom domain (+ `www`) and the local dev origins (`532e8b9`, rebased onto Lovable's commits). Meanwhile the API returned 503 with `x-render-routing: suspend-by-user`: the user suspended the only service at 12:24 thinking it was "the old one" (there was only ever one), then resumed it. Resume redeployed `af53f4e`, so the CORS push had not deployed; a follow-up push triggers the deploy + blueprint sync.
+
 ## Repository state
 
 ```
@@ -229,8 +231,8 @@ API per `.env`), or `VITE_API_URL=https://stock-tool-api-qg9s.onrender.com npm r
 **Next, in order (updated 2026-09-08, afternoon):**
 1. **Canonical repo = `PandagenticSignal`** (done; Render re-pointed, notes 30–31). User: archive
    `stock-tool` on GitHub; optionally delete the orphaned "Pandagentic Signal" blueprint (keep resources).
-2. User: click **Publish** in Lovable to get a public `*.lovable.app` URL (the preview is private).
-   Then `E2E_BASE_URL=<published origin> npx playwright test` for the final checkpoint.
+2. Published at https://pandagenticsignal.com. Final checkpoint: `E2E_BASE_URL=https://pandagenticsignal.com
+   npx playwright test` once the CORS deploy is live.
 3. If magic-link / email sign-in is used from Lovable, add the Lovable origin(s) to Supabase Auth →
    URL configuration (Site URL / redirect list).
 4. Close Phase 7 in this log: tick the last checklist item, record the final checkpoint.
