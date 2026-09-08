@@ -40,6 +40,8 @@ Last updated: 2026-09-08
 
 30. **Canonical repo switch (2026-09-08).** The user chose the Lovable-linked repo as canonical and renamed it on GitHub to **`MWPerrineJr/PandagenticSignal`** (was `blank-canvas-starter`; GitHub redirects the old name). Locally: `origin` → PandagenticSignal, `main` fast-forwarded to its `main` (includes Lovable's scaffold commits and merges; no history rewritten), the `lovable` remote, scratch worktree and `lovable-main` branch removed. Pushes now go to `origin` only. Still to do by the user: re-point the Render service at PandagenticSignal (Render dashboard → service → Settings → Build & Deploy → Repository; Render currently deploys from `stock-tool`), then archive `stock-tool`.
 
+31. **Render re-pointed (2026-09-08).** Changing the service's source repo by hand first turned it into a Node service (Render re-detected the repo root: built the frontend, then `yarn start` failed; the old Docker deploy kept serving with 40–90 s cold starts). The user then applied the blueprint from PandagenticSignal: Render created blueprint instance **PandagenticSignal** which re-adopted the same service (`srv-dafjbtn40ujc73bi5nm0`, URL unchanged: https://stock-tool-api-qg9s.onrender.com), runtime back to Docker, deploy live for `af53f4e` at 11:43. The prompt for `STOCK_API_CORS_ORIGINS` did not appear (newer Render UI creates `sync: false` vars blank); harmless, the regex covers Lovable. Verified: CORS header for the Lovable preview origin, a published-style `*.lovable.app` origin and localhost; none for an unknown origin. The old blueprint instance "Pandagentic Signal" (repo `stock-tool`) is now orphaned: delete it in Render **without** deleting its resources, or leave it.
+
 ## Repository state
 
 ```
@@ -225,8 +227,8 @@ final checkpoint against the deployed frontend. Everything is committed and push
 API per `.env`), or `VITE_API_URL=https://stock-tool-api-qg9s.onrender.com npm run dev` to use Render.
 
 **Next, in order (updated 2026-09-08, afternoon):**
-1. **Canonical repo = `PandagenticSignal`** (done; see note 30). User: re-point Render at it, then
-   archive `stock-tool`.
+1. **Canonical repo = `PandagenticSignal`** (done; Render re-pointed, notes 30–31). User: archive
+   `stock-tool` on GitHub; optionally delete the orphaned "Pandagentic Signal" blueprint (keep resources).
 2. User: click **Publish** in Lovable to get a public `*.lovable.app` URL (the preview is private).
    Then `E2E_BASE_URL=<published origin> npx playwright test` for the final checkpoint.
 3. If magic-link / email sign-in is used from Lovable, add the Lovable origin(s) to Supabase Auth →
