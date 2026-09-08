@@ -226,8 +226,8 @@ API per `.env`), or `VITE_API_URL=https://stock-tool-api-qg9s.onrender.com npm r
    `VITE_API_URL` = `https://stock-tool-api-qg9s.onrender.com` and `VITE_SUPABASE_URL` /
    `VITE_SUPABASE_ANON_KEY` from local `.env` (Project settings → env vars, or paste into the chat),
    and connect Lovable's Supabase integration to `stock-tool-dev`.
-2. Confirm Render picked up `STOCK_API_CORS_ORIGIN_REGEX` from `render.yaml` (Environment tab; add it
-   by hand if blueprint sync did not), then `E2E_BASE_URL=<lovable preview or published origin>
+2. Render picked up `STOCK_API_CORS_ORIGIN_REGEX` from `render.yaml` (verified live: the preview origin
+   gets a CORS header, CI run 34237868398 green). Then `E2E_BASE_URL=<lovable preview or published origin>
    npx playwright test`.
 3. Close Phase 7 in this log: tick the last two checklist items, record the final checkpoint.
 4. Then the polish backlog, in rough priority: replace `window.prompt`/`confirm` in the dashboard
