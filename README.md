@@ -68,7 +68,7 @@ the Render dashboard:
 
 | Variable | Value |
 |---|---|
-| `STOCK_API_CORS_ORIGINS` | comma-separated browser origins, e.g. `https://your-app.lovable.app,http://localhost:5173` |
+| `STOCK_API_CORS_ORIGINS` | comma-separated exact browser origins; `render.yaml` sets the custom domain `https://pandagenticsignal.com` (+ `www`) and local dev |
 | `STOCK_API_CORS_ORIGIN_REGEX` | optional; `https://.*\.lovable\.app` allows every Lovable preview and published subdomain (set in `render.yaml`) |
 
 Optional: `STOCK_API_RATE_LIMIT` (default `120/minute` per client IP), `STOCK_API_LOG_LEVEL`.
@@ -89,8 +89,8 @@ Build the image locally with `docker build -t stock-tool-api api && docker run -
    Supabase project. Lovable builds with `npm run build:dev`, which `package.json` provides.
 4. Connect Lovable's Supabase integration to the same project so `supabase/migrations` stays the
    single source of truth for the schema.
-5. `render.yaml` already sets `STOCK_API_CORS_ORIGIN_REGEX` to allow `*.lovable.app`; a custom
-   domain goes into `STOCK_API_CORS_ORIGINS`.
+5. `render.yaml` sets `STOCK_API_CORS_ORIGIN_REGEX` to allow `*.lovable.app` and lists the custom
+   domain (`pandagenticsignal.com`) in `STOCK_API_CORS_ORIGINS`; add new domains there.
 
 Any static host (Vercel, Netlify, Cloudflare Pages) works too: `npm run build` and serve `dist/`
 with SPA fallback to `index.html`.
