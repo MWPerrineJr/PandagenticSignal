@@ -17,6 +17,8 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Deterministic regardless of the committed .env / shell: mocks target the local API, no Supabase.
+    env: { VITE_API_URL: 'http://localhost:8000', VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' },
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
