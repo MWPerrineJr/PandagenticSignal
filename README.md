@@ -69,6 +69,7 @@ the Render dashboard:
 | Variable | Value |
 |---|---|
 | `STOCK_API_CORS_ORIGINS` | comma-separated browser origins, e.g. `https://your-app.lovable.app,http://localhost:5173` |
+| `STOCK_API_CORS_ORIGIN_REGEX` | optional; `https://.*\.lovable\.app` allows every Lovable preview and published subdomain (set in `render.yaml`) |
 
 Optional: `STOCK_API_RATE_LIMIT` (default `120/minute` per client IP), `STOCK_API_LOG_LEVEL`.
 The free plan spins down after ~15 min idle (first request then takes ~30 s); the Starter plan
@@ -85,7 +86,8 @@ Build the image locally with `docker build -t stock-tool-api api && docker run -
    `VITE_SUPABASE_ANON_KEY` (the `sb_publishable_…` key).
 4. Connect Lovable's Supabase integration to the same project so `supabase/migrations` stays the
    single source of truth for the schema.
-5. Add the Lovable preview and published origins to `STOCK_API_CORS_ORIGINS` on Render.
+5. `render.yaml` already sets `STOCK_API_CORS_ORIGIN_REGEX` to allow `*.lovable.app`; a custom
+   domain goes into `STOCK_API_CORS_ORIGINS`.
 
 Any static host (Vercel, Netlify, Cloudflare Pages) works too: `npm run build` and serve `dist/`
 with SPA fallback to `index.html`.
@@ -118,5 +120,5 @@ session.md           phase log
 
 Frontend (`.env`): `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (leave the
 Supabase pair blank to run without accounts).
-API (`api/.env`, prefix `STOCK_API_`): `CORS_ORIGINS`, `RATE_LIMIT`, `RATE_LIMIT_ENABLED`,
+API (`api/.env`, prefix `STOCK_API_`): `CORS_ORIGINS`, `CORS_ORIGIN_REGEX`, `RATE_LIMIT`, `RATE_LIMIT_ENABLED`,
 `LOG_FORMAT` (`text`|`json`), `LOG_LEVEL`, cache TTLs (see `api/app/settings.py`).

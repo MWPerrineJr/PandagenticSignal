@@ -69,6 +69,21 @@ def test_cors_rejects_unknown_origin(make_client) -> None:
     assert "access-control-allow-origin" not in bad.headers
 
 
+def test_cors_origin_regex_matches_lovable_subdomains(make_client) -> None:
+    client = make_client(
+        cors_origins="http://localhost:5173", cors_origin_regex=r"https://.*\.lovable\.app"
+    )
+    for origin in (
+        "https://id-preview--553ee360-dd3b-43d1-93f9-254d89ad2fc0.lovable.app",
+        "https://stock-ui-builder.lovable.app",
+        "http://localhost:5173",
+    ):
+        r = client.get("/health", headers={"Origin": origin})
+        assert r.headers.get("access-control-allow-origin") == origin, origin
+    bad = client.get("/health", headers={"Origin": "https://lovable.app.evil.example"})
+    assert "access-control-allow-origin" not in bad.headers
+
+
 def test_json_formatter_emits_one_object_per_line() -> None:
     record = logging.LogRecord(
         "app.access", logging.INFO, __file__, 1, "GET /health 200", None, None

@@ -11,6 +11,9 @@ class Settings(BaseSettings):
 
     # Comma-separated list of allowed browser origins.
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    # Optional regex matched against the full origin, for hosts with per-deploy subdomains
+    # (e.g. Lovable's preview + published sites): r"https://.*\.lovable\.app". Empty = off.
+    cors_origin_regex: str = ""
 
     # Cache TTLs in seconds.
     search_ttl: int = 60 * 60 * 24

@@ -1,6 +1,6 @@
 # Session Log — Stock Analysis Tool
 
-Last updated: 2026-09-07 (end of day)
+Last updated: 2026-09-08
 
 ## Conversation summary
 
@@ -33,6 +33,8 @@ Last updated: 2026-09-07 (end of day)
 25. **Phase 7 checkpoint (partial).** pytest 69/69, 99%; vitest 130/130; tsc + oxlint clean; build OK; Playwright 3/3 against the live API in 13 s; live API returns rate-limit headers. **Not done yet (needs the user):** Docker image build (Docker Desktop not running), GitHub repo creation + push (outward-facing, needs go-ahead), Render deploy (needs the user's account), Lovable import, then re-running Playwright with `E2E_BASE_URL` against the deployed frontend. The optional Supabase edge-function proxy was skipped: the API is CORS-locked and rate-limited, and hiding its URL adds latency for no security gain with public market data.
 26. **GitHub.** The user had already created **https://github.com/MWPerrineJr/stock-tool** (public) and pushed `6f244fe`; its CI run failed as expected (half-finished slowapi state). Pushed `0b77b56` + `f7b06fc`; CI run 34161028454 green (API 19 s, Web 47 s). `.env` confirmed not in the repo. Render account created by the user; blueprint deploy pending.
 27. **Render live:** https://stock-tool-api-qg9s.onrender.com (free plan, Ohio, built from `api/Dockerfile`, so the image is verified without local Docker). Probed: `/health` 0.2 s, live `/quote/AAPL`, `/indicators/AAPL?period=6mo` (128 candles, 6 levels), `X-RateLimit-*` headers present, CORS header only for `http://localhost:5173`, 404 for unknown symbols. Playwright 3/3 against a frontend served on :5173 with `VITE_API_URL` = Render URL (a first run on :5174 failed purely because that origin is not in `STOCK_API_CORS_ORIGINS`). The dev server on :5173 is currently running with `VITE_API_URL` pointed at Render.
+
+28. **Lovable (2026-09-08).** The user created Lovable project **Stock UI Builder** (`553ee360-dd3b-43d1-93f9-254d89ad2fc0`) with the chat prompt "import code from https://github.com/MWPerrineJr/stock-tool.git and start building the ui". Lovable ported the frontend into its own project (~53 files "Created", one plan `.md`), and the preview at `https://id-preview--553ee360-dd3b-43d1-93f9-254d89ad2fc0.lovable.app` renders Dashboard/Charts/Watchlist/Analysts in the repo's style. **It is a copy, not a GitHub link:** nothing was pushed to `MWPerrineJr/stock-tool` and no Lovable branch exists, so the two codebases will diverge unless the project is connected to GitHub (Lovable Settings → GitHub) or re-created via the dashboard's *Import from GitHub*. Lovable then asked for the API URL and the Supabase URL + publishable key (env not set yet; the preview shows empty data). Lovable's preview and published sites use different `*.lovable.app` subdomains, and the API's CORS was exact-match only → added `STOCK_API_CORS_ORIGIN_REGEX` (`allow_origin_regex`), default off, set to `https://.*\.lovable\.app` in `render.yaml`; test covers preview + published + localhost + a spoof host. pytest 70/70.
 
 ## Repository state
 
@@ -176,7 +178,7 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] Playwright E2E smoke (3 tests, live data) + weekly/dispatch CI job
 - [x] GitHub push (repo created by the user, public), CI green
 - [x] Render deploy from the blueprint (`STOCK_API_CORS_ORIGINS=http://localhost:5173` for now)
-- [ ] Lovable import, env vars, Supabase integration
+- [~] Lovable import, env vars, Supabase integration — project exists as a copy (see note 28); env vars and GitHub link still to do
 - [x] README with architecture, run, test and deploy instructions
 - [ ] Final test checkpoint: CI green on GitHub, Playwright against the deployed frontend
 
@@ -218,12 +220,15 @@ final checkpoint against the deployed frontend. Everything is committed and push
 **To resume locally:** `cd api && uv run uvicorn app.main:app --reload` and `npm run dev` (uses the local
 API per `.env`), or `VITE_API_URL=https://stock-tool-api-qg9s.onrender.com npm run dev` to use Render.
 
-**Tomorrow, in order:**
-1. User: import the repo into Lovable (Import from GitHub), set `VITE_API_URL` = Render URL plus the
-   two Supabase values from local `.env`, connect Lovable's Supabase integration to the existing
-   project, then report the Lovable origin (`https://….lovable.app`).
-2. Claude: add that origin to `STOCK_API_CORS_ORIGINS` on Render (user does it in the Render dashboard,
-   or via `render.yaml` + env), then run `E2E_BASE_URL=<lovable origin> npx playwright test`.
+**Next, in order (updated 2026-09-08):**
+1. User decides: keep the Lovable copy (and connect it to GitHub from Lovable's settings so edits
+   sync), or re-import via the dashboard's *Import from GitHub*. Either way, in Lovable set
+   `VITE_API_URL` = `https://stock-tool-api-qg9s.onrender.com` and `VITE_SUPABASE_URL` /
+   `VITE_SUPABASE_ANON_KEY` from local `.env` (Project settings → env vars, or paste into the chat),
+   and connect Lovable's Supabase integration to `stock-tool-dev`.
+2. Confirm Render picked up `STOCK_API_CORS_ORIGIN_REGEX` from `render.yaml` (Environment tab; add it
+   by hand if blueprint sync did not), then `E2E_BASE_URL=<lovable preview or published origin>
+   npx playwright test`.
 3. Close Phase 7 in this log: tick the last two checklist items, record the final checkpoint.
 4. Then the polish backlog, in rough priority: replace `window.prompt`/`confirm` in the dashboard
    toolbar with dialogs; Bollinger band fill (custom primitive); scale S/R `order` with bar count;
