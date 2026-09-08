@@ -38,6 +38,8 @@ Last updated: 2026-09-08
 
 29. **Lovable, take two (2026-09-08).** The user created a fresh Lovable project **Blank Canvas Starter** (`e3a0dc1d-d931-425b-9c2e-cf064d043593`), connected GitHub (Lovable created **`MWPerrineJr/blank-canvas-starter`**), then merged the whole `stock-tool` history into it (`147b2cd`, plus a regenerated `package-lock.json`). Every synced commit showed "Build unsuccessful" because Lovable builds with `bun run build:dev` and the merge had kept our `package.json` (no `build:dev`). Fixes pushed to **both** repos: `build:dev` script (`33df879` / `1f02ca2`), the scaffold's stale `bun.lock` removed so Lovable regenerates it. Lovable has no env-var UI, so the root **`.env` is now committed** with the public hosted values (Render API URL, Supabase URL, publishable key); local overrides live in the gitignored `.env.local` (created from the old `.env`); `.env.example` removed; `supabase.ts` also accepts `VITE_SUPABASE_PUBLISHABLE_KEY` (`bd50a26`). That broke CI (MSW handlers hardcoded `localhost:8000` while the app now defaulted to Render; masked locally because this shell exports `VITE_*`) → vitest `test.env` pinned to the local API and handlers reuse `API_URL` from `@/lib/api` (`a58a942`). CI green on both repos (stock-tool run 34248026857, blank-canvas-starter run 34248029180). **Verified in Chrome on the Lovable preview** (`https://id-preview--e3a0dc1d-….lovable.app`, private, needs Lovable's token): search AAPL → dashboard quote, chart with EMAs/Bollinger/S-R, analyst data, all served by Render (`/quote`, `/indicators`, `/recommendations` 200) with CORS via the regex; no console errors. The old copy project "Stock UI Builder" can be deleted. Local repo has a `lovable` remote and a scratch worktree on branch `lovable-main` used to merge `main` into the Lovable repo.
 
+30. **Canonical repo switch (2026-09-08).** The user chose the Lovable-linked repo as canonical and renamed it on GitHub to **`MWPerrineJr/PandagenticSignal`** (was `blank-canvas-starter`; GitHub redirects the old name). Locally: `origin` → PandagenticSignal, `main` fast-forwarded to its `main` (includes Lovable's scaffold commits and merges; no history rewritten), the `lovable` remote, scratch worktree and `lovable-main` branch removed. Pushes now go to `origin` only. Still to do by the user: re-point the Render service at PandagenticSignal (Render dashboard → service → Settings → Build & Deploy → Repository; Render currently deploys from `stock-tool`), then archive `stock-tool`.
+
 ## Repository state
 
 ```
@@ -223,12 +225,8 @@ final checkpoint against the deployed frontend. Everything is committed and push
 API per `.env`), or `VITE_API_URL=https://stock-tool-api-qg9s.onrender.com npm run dev` to use Render.
 
 **Next, in order (updated 2026-09-08, afternoon):**
-1. **Decide the canonical repo.** Two GitHub repos now hold the same code: `stock-tool` (Render deploys
-   from it, local `origin`) and `blank-canvas-starter` (Lovable syncs with it). Recommended: make
-   `blank-canvas-starter` canonical — rename it on GitHub (Lovable and Render track repos by id, so
-   renames are safe), point Render's service and the local `origin` at it, archive `stock-tool`.
-   Until then every push goes to both (`git push origin main`, then merge `main` into `lovable-main`
-   in the scratch worktree and push to `lovable`).
+1. **Canonical repo = `PandagenticSignal`** (done; see note 30). User: re-point Render at it, then
+   archive `stock-tool`.
 2. User: click **Publish** in Lovable to get a public `*.lovable.app` URL (the preview is private).
    Then `E2E_BASE_URL=<published origin> npx playwright test` for the final checkpoint.
 3. If magic-link / email sign-in is used from Lovable, add the Lovable origin(s) to Supabase Auth →

@@ -80,8 +80,11 @@ Build the image locally with `docker build -t stock-tool-api api && docker run -
 
 ### Frontend on Lovable
 
-1. Push the repo to GitHub.
-2. In Lovable choose **Import from GitHub** and pick the repository (the Vite project is at the root).
+1. Lovable links to a repo it creates: start a blank Lovable project, connect GitHub from its
+   settings, then push this code into the repo Lovable made (that repo is now the canonical one,
+   `MWPerrineJr/PandagenticSignal`). Lovable's own *Import from GitHub* works too if offered.
+2. Every push to `main` shows up in Lovable and rebuilds the preview; Lovable's edits come back as
+   commits. Never force-push or rewrite pushed history (see `AGENTS.md`).
 3. No env vars to enter: the committed root `.env` already points at the Render API and the
    Supabase project. Lovable builds with `npm run build:dev`, which `package.json` provides.
 4. Connect Lovable's Supabase integration to the same project so `supabase/migrations` stays the
