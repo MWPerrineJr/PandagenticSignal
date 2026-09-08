@@ -44,6 +44,8 @@ Last updated: 2026-09-08
 
 32. **Custom domain + suspension (2026-09-08).** Lovable published the site at **https://pandagenticsignal.com** (www redirects to it; Lovable committed `bun.lock` and a plan note "Purchased custom domain"). The CORS regex only covers `*.lovable.app`, so `render.yaml` now sets `STOCK_API_CORS_ORIGINS` to the custom domain (+ `www`) and the local dev origins (`532e8b9`, rebased onto Lovable's commits). Meanwhile the API returned 503 with `x-render-routing: suspend-by-user`: the user suspended the only service at 12:24 thinking it was "the old one" (there was only ever one), then resumed it. Resume redeployed `af53f4e`, so the CORS push had not deployed; a follow-up push triggers the deploy + blueprint sync.
 
+33. **Phase 7 closed (2026-09-08).** Pushes did not auto-deploy on Render after the resume, so "Deploy latest commit" was triggered by hand (94db5d6 live). The blueprint's env change also needed a **Manual sync** + Approve on the blueprint page (Render treats new env vars from `render.yaml` as an approval step). After that the API sends the CORS header for `https://pandagenticsignal.com`. **Final checkpoint:** `E2E_BASE_URL=https://pandagenticsignal.com npx playwright test` → 3/3 passed in 12.7 s against the published site + Render API + live Yahoo data. CI green on PandagenticSignal.
+
 ## Repository state
 
 ```
@@ -185,10 +187,10 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] Optional Supabase edge-function proxy — skipped deliberately (see note 25)
 - [x] Playwright E2E smoke (3 tests, live data) + weekly/dispatch CI job
 - [x] GitHub push (repo created by the user, public), CI green
-- [x] Render deploy from the blueprint (`STOCK_API_CORS_ORIGINS=http://localhost:5173` for now)
+- [x] Render deploy from the blueprint; CORS = custom domain + `*.lovable.app` regex + local dev
 - [x] Lovable import + env: GitHub-linked project (note 29), preview verified live. Supabase integration in Lovable not connected (not required: the app talks to Supabase directly)
 - [x] README with architecture, run, test and deploy instructions
-- [ ] Final test checkpoint: CI green on GitHub, Playwright against the deployed frontend
+- [x] Final test checkpoint: CI green on PandagenticSignal, Playwright 3/3 against https://pandagenticsignal.com
 
 ## Notes for later phases
 
@@ -212,34 +214,35 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - The consensus label uses a weighted mean bucketed at 4.5/3.5/2.5/1.5; AAPL's live mix (6/18/13/3/3) lands on Hold at 3.49, which surprises people who expect "Buy". Consider Yahoo's own `recommendationKey` from `Ticker.info` if that matters.
 - The combobox renders cmdk primitives directly with an absolutely positioned panel (no Base UI Popover) so focus and jsdom behave predictably.
 
-## Pick up here (2026-09-08)
+## Pick up here
 
-**Where things stand:** Phases 0–6 are closed. Phase 7 is complete except the Lovable import and the
-final checkpoint against the deployed frontend. Everything is committed and pushed; `main` on GitHub is
-`e657bfa` or later and CI is green.
+**Where things stand (2026-09-08, end of day):** All phases 0–7 are closed. The app is live.
 
 **Live pieces:**
-- API: https://stock-tool-api-qg9s.onrender.com (Render free plan; cold start ~30 s after 15 min idle).
-  CORS currently allows only `http://localhost:5173`.
-- Supabase: `stock-tool-dev` (`agumrmsaeblcldcygajl`), one user account (the owner), watchlist and
-  one dashboard layout stored.
-- GitHub: https://github.com/MWPerrineJr/stock-tool (public).
+- Site: https://pandagenticsignal.com (Lovable-published, custom domain; www redirects). Lovable project
+  "Blank Canvas Starter" `e3a0dc1d-d931-425b-9c2e-cf064d043593`, private preview at
+  `https://id-preview--e3a0dc1d-….lovable.app`.
+- Repo (canonical): https://github.com/MWPerrineJr/PandagenticSignal — Lovable syncs both ways with it;
+  never rewrite pushed history. `stock-tool` is the old repo (archive it).
+- API: https://stock-tool-api-qg9s.onrender.com (Render free plan, Docker, blueprint "PandagenticSignal";
+  cold start 30–90 s). Env from `render.yaml`; a **new** env key in `render.yaml` needs Manual sync +
+  Approve on the blueprint page. Auto-deploy on push has been flaky since the repo switch — if a push
+  does not deploy, use Manual Deploy → Deploy latest commit.
+- Supabase: `stock-tool-dev` (`agumrmsaeblcldcygajl`).
+- Frontend config is the committed root `.env`; local overrides in `.env.local` (this shell also exports
+  `VITE_*`, which override both — unset them when reproducing CI).
 
-**To resume locally:** `cd api && uv run uvicorn app.main:app --reload` and `npm run dev` (uses the local
-API per `.env`), or `VITE_API_URL=https://stock-tool-api-qg9s.onrender.com npm run dev` to use Render.
+**To resume locally:** `cd api && uv run uvicorn app.main:app --reload` and `npm run dev`. Pull first:
+Lovable commits to `main`.
 
-**Next, in order (updated 2026-09-08, afternoon):**
-1. **Canonical repo = `PandagenticSignal`** (done; Render re-pointed, notes 30–31). User: archive
-   `stock-tool` on GitHub; optionally delete the orphaned "Pandagentic Signal" blueprint (keep resources).
-2. Published at https://pandagenticsignal.com. Final checkpoint: `E2E_BASE_URL=https://pandagenticsignal.com
-   npx playwright test` once the CORS deploy is live.
-3. If magic-link / email sign-in is used from Lovable, add the Lovable origin(s) to Supabase Auth →
-   URL configuration (Site URL / redirect list).
-4. Close Phase 7 in this log: tick the last checklist item, record the final checkpoint.
-5. Then the polish backlog, in rough priority: replace `window.prompt`/`confirm` in the dashboard
-   toolbar with dialogs; Bollinger band fill (custom primitive); scale S/R `order` with bar count;
-   consider Yahoo's `recommendationKey` for the consensus label; `supabase link` + `supabase test db
-   --linked` for the pgTAP tests; optionally split the main bundle further.
+**Open items (user):** archive `stock-tool` on GitHub; optionally delete the orphaned Render blueprint
+"Pandagentic Signal" (keep resources); if magic-link sign-in is used from the site, add
+`https://pandagenticsignal.com` to Supabase Auth → URL configuration.
+
+**Polish backlog, rough priority:** replace `window.prompt`/`confirm` in the dashboard toolbar with
+dialogs; Bollinger band fill (custom primitive); scale S/R `order` with bar count; consider Yahoo's
+`recommendationKey` for the consensus label; `supabase link` + `supabase test db --linked` for the
+pgTAP tests; split the main bundle further; retry in `MarketData._history` on transient empty frames.
 
 ## Next actions (Phase 7 detail)
 
