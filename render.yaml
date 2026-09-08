@@ -1,0 +1,21 @@
+# Render blueprint: https://render.com/docs/blueprint-spec
+# Deploy: Render dashboard → New → Blueprint → pick this repo. Free plan spins down when idle.
+services:
+  - type: web
+    name: stock-tool-api
+    runtime: docker
+    rootDir: api
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: ohio
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: STOCK_API_CORS_ORIGINS
+        sync: false # exact production origin(s), comma separated
+      - key: STOCK_API_CORS_ORIGIN_REGEX
+        value: https://.*\.lovable\.app # Lovable preview + published subdomains
+      - key: STOCK_API_LOG_FORMAT
+        value: json
+      - key: STOCK_API_RATE_LIMIT
+        value: 120/minute

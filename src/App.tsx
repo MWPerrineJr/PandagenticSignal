@@ -1,5 +1,15 @@
+import { BrowserRouter } from 'react-router-dom'
+import { AppProviders } from '@/app/providers'
+import { AppRoutes } from '@/app/routes'
+
 function App() {
-  return <main className="min-h-screen bg-white" />;
+  return (
+    <AppProviders>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AppProviders>
+  )
 }
 
-export default App;
+export default App

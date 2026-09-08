@@ -1,0 +1,52 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "FastAPI + yfinance market data service for the Stock Analysis Tool"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cachetools>=7.1.8",
+    "fastapi>=0.141.1",
+    "limits>=5.8.0",
+    "numpy>=2.5.3",
+    "pandas>=3.0.5",
+    "pydantic-settings>=2.15.0",
+    "scipy>=1.18.1",
+    "uvicorn[standard]>=0.52.4",
+    "yfinance>=1.7.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: hits the live Yahoo Finance network; run with `pytest -m integration`",
+]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+    "ignore:The anyio.abc.BlockingPortal alias is deprecated",
+]
+
+[tool.coverage.run]
+source = ["app"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]

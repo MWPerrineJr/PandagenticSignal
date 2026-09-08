@@ -1,0 +1,35 @@
+# Install once with: pip install pre-commit && pre-commit install
+# Runs on every commit; full suites run in GitHub Actions on push/PR.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check (api)
+        entry: bash -c 'cd api && uv run ruff check --fix .'
+        language: system
+        files: ^api/.*\.py$
+        pass_filenames: false
+      - id: ruff-format
+        name: ruff format (api)
+        entry: bash -c 'cd api && uv run ruff format .'
+        language: system
+        files: ^api/.*\.py$
+        pass_filenames: false
+      - id: pytest-unit
+        name: pytest unit (api)
+        entry: bash -c 'cd api && uv run pytest tests/unit -q'
+        language: system
+        files: ^api/.*\.py$
+        pass_filenames: false
+      - id: oxlint
+        name: oxlint (web)
+        entry: npm run lint --silent
+        language: system
+        files: ^src/.*\.(ts|tsx)$
+        pass_filenames: false
+      - id: vitest-changed
+        name: vitest changed (web)
+        entry: npx vitest run --changed
+        language: system
+        files: ^src/.*\.(ts|tsx)$
+        pass_filenames: false
