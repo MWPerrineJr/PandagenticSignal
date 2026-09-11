@@ -245,7 +245,7 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] API: `scripts/export_endpoints.py` + generated `src/content/endpoints.json` + staleness test
 - [x] Frontend: `src/content/faq.ts` + `disclaimer.ts`, FAQ page (endpoint table + live indicator catalog), disclaimer page, footer on every page, one-time acknowledgement bar, sentiment disclaimer links out, nav item
 - [x] Tests: 1 API + 8 frontend; e2e FAQ/disclaimer step, 3/3 locally
-- [ ] Checkpoint: commit + push, CI (fill in the hash)
+- [x] Checkpoint: committed + pushed as `01398fe`, CI green
 - [ ] Deploy (**needs the user**): Render Manual Deploy latest (no new env keys), Lovable Publish → Update; then Playwright 8/8 against pandagenticsignal.com. **Note:** have a lawyer review `src/content/disclaimer.ts` before treating the site as public-facing — it is a first draft, not vetted legal advice.
 
 ### Phase 11 — AI news-sentiment agent
