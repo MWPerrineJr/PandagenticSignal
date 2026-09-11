@@ -13,10 +13,12 @@ def test_normalise_ticker() -> None:
 # -- search ---------------------------------------------------------------------------------
 
 
-def test_search_filters_to_equities_and_etfs(market_data: MarketData) -> None:
+def test_search_keeps_equities_etfs_and_crypto(market_data: MarketData) -> None:
     results = market_data.search("apple")
     symbols = [r.symbol for r in results]
-    assert symbols == ["AAPL", "APC.DE", "QQQ"]
+    assert symbols == ["AAPL", "APC.DE", "QQQ", "BTC-USD"]  # options and futures are dropped
+    assert results[3].type == "CRYPTOCURRENCY"
+    assert results[3].exchange == "CCC"
     assert results[0].name == "Apple Inc."
     assert results[0].exchange == "NASDAQ"
     assert results[1].name == "Apple Inc."  # falls back to longname
@@ -56,6 +58,46 @@ def test_quote_missing_optional_fields(market_data: MarketData) -> None:
     assert q.change == 0.0
     assert q.day_high is None
     assert q.year_low is None
+    assert q.quote_type is None
+
+
+def test_quote_crypto_symbol(market_data: MarketData) -> None:
+    q = market_data.quote("btc-usd")
+    assert q.symbol == "BTC-USD"
+    assert q.quote_type == "CRYPTOCURRENCY"
+    assert q.exchange == "CCC"
+    assert q.change_pct == pytest.approx(1000 / 64000 * 100)
+
+
+# -- crypto ---------------------------------------------------------------------------------
+
+
+def test_top_crypto_maps_screener_rows(market_data: MarketData) -> None:
+    top = market_data.top_crypto(limit=10)
+    assert isinstance(top.as_of, int)
+    # The row without a price is skipped.
+    assert [c.symbol for c in top.coins] == ["BTC-USD", "ETH-USD", "SOL-USD"]
+    btc, eth, sol = top.coins
+    assert btc.name == "Bitcoin USD"
+    assert btc.price == 65000.0
+    assert btc.change_pct == 1.5
+    assert btc.market_cap == 1.3e12
+    assert btc.volume == 31_000_000_000  # 24 h volume preferred over the session volume
+    assert btc.circulating_supply == 20_000_000
+    assert eth.name == "Ethereum USD"  # falls back to longName
+    assert eth.volume == 12_000_000_000
+    assert sol.change_pct is None and sol.volume is None and sol.circulating_supply is None
+
+
+def test_top_crypto_limit_is_clamped_and_cached(market_data: MarketData, fake_yf: FakeYF) -> None:
+    assert [c.symbol for c in market_data.top_crypto(limit=1).coins] == ["BTC-USD"]
+    assert FakeTicker.calls[-1] == ("screen", "all_cryptocurrencies_us:1")
+    assert len(market_data.top_crypto(limit=500).coins) == 3  # clamped to MAX_CRYPTO upstream
+    assert FakeTicker.calls[-1] == ("screen", "all_cryptocurrencies_us:100")
+    fake_yf.fail_with_upstream()
+    assert len(market_data.top_crypto(limit=1).coins) == 1  # served from cache
+    with pytest.raises(UpstreamError):
+        market_data.top_crypto(limit=2)
 
 
 def test_quote_unknown_ticker_raises_404_error(market_data: MarketData) -> None:

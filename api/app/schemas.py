@@ -31,11 +31,28 @@ class Quote(BaseModel):
     day_low: float | None = None
     year_high: float | None = None
     year_low: float | None = None
+    # Yahoo quoteType: EQUITY, ETF, CRYPTOCURRENCY, ...
+    quote_type: str | None = None
 
 
 class QuoteBatch(BaseModel):
     quotes: list[Quote]
     missing: list[str] = Field(default_factory=list)
+
+
+class CryptoQuote(BaseModel):
+    symbol: str
+    name: str
+    price: float
+    change_pct: float | None = None
+    market_cap: float | None = None
+    volume: float | None = None
+    circulating_supply: float | None = None
+
+
+class CryptoTop(BaseModel):
+    as_of: int = Field(description="Unix epoch seconds (UTC) when the list was fetched")
+    coins: list[CryptoQuote]
 
 
 class Candle(BaseModel):

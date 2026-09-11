@@ -13,6 +13,7 @@ export const queryKeys = {
   indicators: (symbol: string, period: Period, interval: Interval) =>
     ['indicators', normaliseSymbol(symbol), period, interval] as const,
   recommendations: (symbol: string) => ['recommendations', normaliseSymbol(symbol)] as const,
+  cryptoTop: (limit: number) => ['crypto', 'top', limit] as const,
 }
 
 /** Never retry a 404: the symbol simply does not exist. */
@@ -79,6 +80,16 @@ export function useRecommendations(symbol: string | null | undefined) {
     queryFn: ({ signal }) => api.recommendations(symbol!, { signal }),
     enabled: Boolean(symbol),
     staleTime: HOUR,
+  })
+}
+
+export function useCryptoTop(limit = 25) {
+  return useQuery({
+    queryKey: queryKeys.cryptoTop(limit),
+    queryFn: ({ signal }) => api.cryptoTop(limit, { signal }),
+    staleTime: MINUTE,
+    refetchInterval: MINUTE,
+    placeholderData: keepPreviousData,
   })
 }
 

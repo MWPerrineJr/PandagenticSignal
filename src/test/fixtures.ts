@@ -1,4 +1,4 @@
-import type { Indicators, Quote, Recommendations, SearchResult } from '@/lib/api'
+import type { CryptoTop, Indicators, Quote, Recommendations, SearchResult } from '@/lib/api'
 
 export const searchFixtures: Record<string, SearchResult[]> = {
   apple: [
@@ -6,6 +6,10 @@ export const searchFixtures: Record<string, SearchResult[]> = {
     { symbol: 'APC.DE', name: 'Apple Inc.', exchange: 'XETRA', type: 'EQUITY' },
   ],
   msft: [{ symbol: 'MSFT', name: 'Microsoft Corporation', exchange: 'NASDAQ', type: 'EQUITY' }],
+  bitcoin: [
+    { symbol: 'BTC-USD', name: 'Bitcoin USD', exchange: 'CCC', type: 'CRYPTOCURRENCY' },
+    { symbol: 'IBIT', name: 'iShares Bitcoin Trust ETF', exchange: 'NASDAQ', type: 'ETF' },
+  ],
 }
 
 export const quoteFixtures: Record<string, Quote> = {
@@ -23,6 +27,7 @@ export const quoteFixtures: Record<string, Quote> = {
     day_low: 197,
     year_high: 260,
     year_low: 150,
+    quote_type: 'EQUITY',
   },
   MSFT: {
     symbol: 'MSFT',
@@ -39,6 +44,43 @@ export const quoteFixtures: Record<string, Quote> = {
     year_high: null,
     year_low: null,
   },
+  'BTC-USD': {
+    symbol: 'BTC-USD',
+    price: 65000,
+    previous_close: 64000,
+    change: 1000,
+    change_pct: 1.5625,
+    volume: 30_000_000_000,
+    market_cap: 1.3e12,
+    currency: 'USD',
+    exchange: 'CCC',
+    day_high: 66000,
+    day_low: 63500,
+    year_high: 126000,
+    year_low: 57000,
+    quote_type: 'CRYPTOCURRENCY',
+  },
+  'ETH-USD': {
+    symbol: 'ETH-USD',
+    price: 3200,
+    previous_close: 3224,
+    change: -24,
+    change_pct: -0.75,
+    volume: 12_000_000_000,
+    market_cap: 3.9e11,
+    currency: 'USD',
+    exchange: 'CCC',
+    quote_type: 'CRYPTOCURRENCY',
+  },
+}
+
+export const cryptoTopFixture: CryptoTop = {
+  as_of: 1_789_137_683,
+  coins: [
+    { symbol: 'BTC-USD', name: 'Bitcoin USD', price: 65000, change_pct: 1.5, market_cap: 1.3e12, volume: 31e9, circulating_supply: 20_000_000 },
+    { symbol: 'ETH-USD', name: 'Ethereum USD', price: 3200, change_pct: -0.75, market_cap: 3.9e11, volume: 12e9, circulating_supply: 120_000_000 },
+    { symbol: 'DOGE-USD', name: 'Dogecoin USD', price: 0.1234, change_pct: null, market_cap: 1.8e10, volume: null, circulating_supply: null },
+  ],
 }
 
 const DAY = 86_400

@@ -1,4 +1,4 @@
-import { ApiError } from '@/lib/api'
+import { ApiError, isCryptoQuote } from '@/lib/api'
 import { useQuote } from '@/lib/queries'
 import { formatChange, formatCompact, formatPrice } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -41,12 +41,13 @@ export function QuoteCard({ symbol, className }: { symbol: string; className?: s
   }
 
   const up = (data.change ?? 0) >= 0
+  const crypto = isCryptoQuote(data)
   return (
     <Card className={className}>
       <CardHeader>
         <CardTitle className="font-mono text-base">{data.symbol}</CardTitle>
         <CardDescription>
-          {data.exchange ?? '—'} · {data.currency ?? 'USD'}
+          {crypto ? 'Crypto' : (data.exchange ?? '—')} · {data.currency ?? 'USD'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -55,11 +56,11 @@ export function QuoteCard({ symbol, className }: { symbol: string; className?: s
           {formatChange(data.change, data.change_pct)}
         </div>
         <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-          <dt className="text-muted-foreground">Volume</dt>
+          <dt className="text-muted-foreground">{crypto ? 'Volume (24h)' : 'Volume'}</dt>
           <dd className="text-right tabular-nums">{formatCompact(data.volume)}</dd>
           <dt className="text-muted-foreground">Market cap</dt>
           <dd className="text-right tabular-nums">{formatCompact(data.market_cap)}</dd>
-          <dt className="text-muted-foreground">Day range</dt>
+          <dt className="text-muted-foreground">{crypto ? '24h range' : 'Day range'}</dt>
           <dd className="text-right tabular-nums">
             {formatPrice(data.day_low)} – {formatPrice(data.day_high)}
           </dd>

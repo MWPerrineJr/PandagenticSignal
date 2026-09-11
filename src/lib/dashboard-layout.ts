@@ -11,7 +11,7 @@ export const GRID_COLS = 12
 export const ROW_HEIGHT = 40
 export const MAX_WIDGETS = 12
 
-export const WIDGET_TYPES = ['quote', 'chart', 'watchlist', 'analyst', 'compare'] as const
+export const WIDGET_TYPES = ['quote', 'chart', 'watchlist', 'analyst', 'compare', 'crypto'] as const
 export type WidgetType = (typeof WIDGET_TYPES)[number]
 export const isWidgetType = (t: string): t is WidgetType => (WIDGET_TYPES as readonly string[]).includes(t)
 
@@ -32,6 +32,7 @@ export const WIDGET_CONFIG_SCHEMAS = {
     symbols: z.array(z.string().min(1).max(16)).max(5).default([]),
     period: z.enum(CHART_PERIODS).default('6mo'),
   }),
+  crypto: z.object({ limit: z.number().int().min(1).max(20).default(5) }),
 } as const
 
 export type WidgetConfig<T extends WidgetType = WidgetType> = z.infer<(typeof WIDGET_CONFIG_SCHEMAS)[T]>
@@ -73,6 +74,7 @@ export const WIDGET_SIZES: Record<WidgetType, { w: number; h: number; minW: numb
   watchlist: { w: 4, h: 10, minW: 3, minH: 4 },
   analyst: { w: 8, h: 8, minW: 4, minH: 6 },
   compare: { w: 8, h: 10, minW: 4, minH: 6 },
+  crypto: { w: 4, h: 8, minW: 3, minH: 5 },
 }
 
 export const WIDGET_TITLES: Record<WidgetType, string> = {
@@ -81,6 +83,7 @@ export const WIDGET_TITLES: Record<WidgetType, string> = {
   watchlist: 'Watchlist',
   analyst: 'Analysts',
   compare: 'Compare',
+  crypto: 'Crypto market',
 }
 
 export function newId(): string {

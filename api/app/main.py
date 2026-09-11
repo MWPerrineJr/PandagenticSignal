@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from app.errors import RateLimitedError, TickerNotFoundError, UpstreamError
 from app.logging_config import access_log_middleware, configure_logging
 from app.ratelimit import RateLimiter
-from app.routers import history, quotes, recommendations, search
+from app.routers import crypto, history, quotes, recommendations, search
 from app.settings import Settings, get_settings
 
 
@@ -47,7 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    for r in (search.router, quotes.router, history.router, recommendations.router):
+    for r in (search.router, quotes.router, history.router, recommendations.router, crypto.router):
         app.include_router(r)
 
     return app

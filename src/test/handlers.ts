@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { makeIndicators, quoteFixtures, recommendationsFixture, searchFixtures } from './fixtures'
+import { cryptoTopFixture, makeIndicators, quoteFixtures, recommendationsFixture, searchFixtures } from './fixtures'
 
 import { API_URL } from '@/lib/api'
 
@@ -55,6 +55,11 @@ export const handlers = [
       period: url.searchParams.get('period') ?? '1y',
       interval: url.searchParams.get('interval') ?? '1d',
     })
+  }),
+
+  http.get(`${API_URL}/crypto/top`, ({ request }) => {
+    const limit = Number(new URL(request.url).searchParams.get('limit') ?? 25)
+    return HttpResponse.json({ ...cryptoTopFixture, coins: cryptoTopFixture.coins.slice(0, limit) })
   }),
 
   http.get(`${API_URL}/recommendations/:symbol`, ({ params }) => {

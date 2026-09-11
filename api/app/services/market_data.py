@@ -6,6 +6,7 @@ The yfinance module is held as an instance attribute so tests can swap in a fake
 from __future__ import annotations
 
 import math
+import time
 from typing import Any
 
 import pandas as pd
@@ -15,6 +16,8 @@ from yfinance import exceptions as yf_exc
 from app.errors import RateLimitedError, TickerNotFoundError, UpstreamError
 from app.schemas import (
     Candle,
+    CryptoQuote,
+    CryptoTop,
     GradeChange,
     PriceTargets,
     Quote,
@@ -24,8 +27,10 @@ from app.schemas import (
 from app.services.cache import Cache
 from app.settings import Settings, get_settings
 
-SEARCH_TYPES = {"EQUITY", "ETF"}
+SEARCH_TYPES = {"EQUITY", "ETF", "CRYPTOCURRENCY"}
 MAX_GRADE_CHANGES = 50
+CRYPTO_SCREEN = "all_cryptocurrencies_us"
+MAX_CRYPTO = 100
 
 
 def _num(value: Any) -> float | None:
@@ -185,6 +190,7 @@ class MarketData:
             day_low=_num(get("day_low")),
             year_high=_num(get("year_high")),
             year_low=_num(get("year_low")),
+            quote_type=_str(get("quote_type")),
         )
 
     def quotes(self, tickers: list[str]) -> tuple[list[Quote], list[str]]:
@@ -201,6 +207,39 @@ class MarketData:
             except TickerNotFoundError:
                 missing.append(symbol)
         return found, missing
+
+    # -- crypto -----------------------------------------------------------------------------
+
+    def top_crypto(self, limit: int = 25) -> CryptoTop:
+        """Top coins by market cap from Yahoo's predefined crypto screener."""
+        limit = max(1, min(int(limit), MAX_CRYPTO))
+        return self.cache.get_or_set(
+            "crypto_top", limit, self.settings.crypto_ttl, lambda: self._top_crypto(limit)
+        )
+
+    def _top_crypto(self, limit: int) -> CryptoTop:
+        result = self._call(self.yf.screen, CRYPTO_SCREEN, count=limit)
+        quotes = result.get("quotes") or [] if isinstance(result, dict) else []
+        coins: list[CryptoQuote] = []
+        for item in quotes:
+            symbol = _str(item.get("symbol"))
+            price = _num(item.get("regularMarketPrice"))
+            if not symbol or price is None:
+                continue
+            coins.append(
+                CryptoQuote(
+                    symbol=symbol,
+                    name=_str(item.get("shortName")) or _str(item.get("longName")) or symbol,
+                    price=price,
+                    change_pct=_num(item.get("regularMarketChangePercent")),
+                    market_cap=_num(item.get("marketCap")),
+                    volume=_num(item.get("volume24Hr")) or _num(item.get("regularMarketVolume")),
+                    circulating_supply=_num(item.get("circulatingSupply")),
+                )
+            )
+            if len(coins) >= limit:
+                break
+        return CryptoTop(as_of=int(time.time()), coins=coins)
 
     # -- history ----------------------------------------------------------------------------
 

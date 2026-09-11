@@ -36,14 +36,35 @@ export const quoteSchema = z.object({
   day_low: nullableNumber.optional(),
   year_high: nullableNumber.optional(),
   year_low: nullableNumber.optional(),
+  /** Yahoo quoteType: EQUITY, ETF, CRYPTOCURRENCY, ... */
+  quote_type: nullableString.optional(),
 })
 export type Quote = z.infer<typeof quoteSchema>
+export const isCryptoQuote = (quote: Pick<Quote, 'quote_type'> | null | undefined): boolean =>
+  quote?.quote_type === 'CRYPTOCURRENCY'
 
 export const quoteBatchSchema = z.object({
   quotes: z.array(quoteSchema),
   missing: z.array(z.string()),
 })
 export type QuoteBatch = z.infer<typeof quoteBatchSchema>
+
+export const cryptoQuoteSchema = z.object({
+  symbol: z.string(),
+  name: z.string(),
+  price: z.number(),
+  change_pct: nullableNumber.optional(),
+  market_cap: nullableNumber.optional(),
+  volume: nullableNumber.optional(),
+  circulating_supply: nullableNumber.optional(),
+})
+export type CryptoQuote = z.infer<typeof cryptoQuoteSchema>
+
+export const cryptoTopSchema = z.object({
+  as_of: z.number().int(),
+  coins: z.array(cryptoQuoteSchema),
+})
+export type CryptoTop = z.infer<typeof cryptoTopSchema>
 
 export const candleSchema = z.object({
   time: z.number().int(),
@@ -177,4 +198,5 @@ export const api = {
     apiFetch(`/indicators/${encodeURIComponent(normaliseSymbol(symbol))}`, indicatorsSchema, { period, interval }, init),
   recommendations: (symbol: string, init?: RequestInit) =>
     apiFetch(`/recommendations/${encodeURIComponent(normaliseSymbol(symbol))}`, recommendationsSchema, undefined, init),
+  cryptoTop: (limit = 25, init?: RequestInit) => apiFetch(`/crypto/top`, cryptoTopSchema, { limit }, init),
 }

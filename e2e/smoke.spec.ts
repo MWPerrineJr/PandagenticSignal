@@ -53,6 +53,30 @@ test.describe('smoke (live data, signed out)', () => {
     await expect(page.getByRole('table', { name: /rating changes/i })).toBeVisible()
   })
 
+  test('crypto tab lists coins, opens a coin, and search labels crypto', async ({ page }) => {
+    await page.goto('/crypto')
+    await expect(page.getByRole('heading', { level: 1, name: 'Crypto' })).toBeVisible()
+    const btc = page.getByTestId('row-BTC-USD')
+    await expect(btc).toContainText(/\$\d[\d,]*\.\d{2}/)
+    await expect(btc).toContainText(/[+-]?\d+\.\d{2}%/)
+
+    // Clicking the coin selects it app-wide and shows the quote card + chart.
+    await btc.getByRole('button', { name: /Bitcoin/ }).click()
+    await expect(page).toHaveURL(/[?&]t=BTC-USD/)
+    const detail = page.getByTestId('coin-detail')
+    await expect(detail).toContainText('Crypto · USD')
+    await expect(detail.getByTestId('price-chart')).toBeVisible()
+
+    // The header search finds coins and labels them.
+    const search = page.getByRole('combobox', { name: 'Search symbol or company' })
+    await search.fill('ethereum')
+    const option = page.getByRole('option', { name: /^ETH-USD\b/ }).first()
+    await expect(option).toContainText('Crypto')
+    await option.click()
+    await expect(page).toHaveURL(/[?&]t=ETH-USD/)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('ETH-USD')
+  })
+
   test('unknown symbol shows a friendly error, not a crash', async ({ page }) => {
     await page.goto('/?t=ZZZZNOTREAL')
     await expect(page.getByRole('alert').filter({ hasText: /no data for ZZZZNOTREAL/i })).toBeVisible()

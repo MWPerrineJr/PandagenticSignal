@@ -1,8 +1,8 @@
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/server'
 import { API_URL } from '@/test/handlers'
-import { makeIndicators, quoteFixtures } from '@/test/fixtures'
-import { ApiError, api, indicatorsSchema, quoteSchema, recommendationsSchema } from './api'
+import { cryptoTopFixture, makeIndicators, quoteFixtures } from '@/test/fixtures'
+import { ApiError, api, cryptoTopSchema, indicatorsSchema, isCryptoQuote, quoteSchema, recommendationsSchema } from './api'
 
 describe('api client', () => {
   it('parses a quote', async () => {
@@ -69,12 +69,27 @@ describe('api client', () => {
     expect(rec.summary[0]?.strong_buy).toBe(6)
     expect(rec.upgrades_downgrades[0]?.firm).toBe('Morgan Stanley')
   })
+
+  it('fetches the top coins with a limit', async () => {
+    const top = await api.cryptoTop(2)
+    expect(top.coins.map((c) => c.symbol)).toEqual(['BTC-USD', 'ETH-USD'])
+    expect(top.coins[0]?.change_pct).toBe(1.5)
+    expect(typeof top.as_of).toBe('number')
+  })
+
+  it('flags crypto quotes by quote_type', async () => {
+    expect(isCryptoQuote(await api.quote('BTC-USD'))).toBe(true)
+    expect(isCryptoQuote(await api.quote('AAPL'))).toBe(false)
+    expect(isCryptoQuote(await api.quote('MSFT'))).toBe(false) // field absent
+    expect(isCryptoQuote(null)).toBe(false)
+  })
 })
 
 describe('schemas', () => {
   it('accept the fixtures used by MSW', () => {
     expect(quoteSchema.safeParse(quoteFixtures.AAPL).success).toBe(true)
     expect(indicatorsSchema.safeParse(makeIndicators()).success).toBe(true)
+    expect(cryptoTopSchema.safeParse(cryptoTopFixture).success).toBe(true)
     expect(recommendationsSchema.safeParse({ symbol: 'X', summary: [], price_targets: {}, upgrades_downgrades: [] }).success).toBe(true)
   })
 

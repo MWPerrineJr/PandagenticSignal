@@ -134,7 +134,7 @@ export function TickerSearch({
                     <span className="w-20 shrink-0 font-mono font-semibold">{r.symbol}</span>
                     <span className="truncate">{r.name}</span>
                     <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                      {r.exchange ?? r.type}
+                      {r.type === 'CRYPTOCURRENCY' ? 'Crypto' : (r.exchange ?? r.type)}
                     </span>
                   </CommandPrimitive.Item>
                 ))}

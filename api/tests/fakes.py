@@ -42,6 +42,7 @@ FAST_INFO = {
         "day_low": 197.0,
         "year_high": 260.0,
         "year_low": 150.0,
+        "quote_type": "EQUITY",
     },
     "MSFT": {
         "last_price": 400.0,
@@ -51,6 +52,15 @@ FAST_INFO = {
         "currency": "USD",
         "exchange": "NMS",
     },
+    "BTC-USD": {
+        "last_price": 65000.0,
+        "previous_close": 64000.0,
+        "last_volume": 30_000_000_000,
+        "market_cap": 1.3e12,
+        "currency": "USD",
+        "exchange": "CCC",
+        "quote_type": "CRYPTOCURRENCY",
+    },
 }
 
 SEARCH_QUOTES = [
@@ -59,6 +69,43 @@ SEARCH_QUOTES = [
     {"symbol": "AAPL260918C00200000", "shortname": "AAPL Sep 2026 call", "quoteType": "OPTION"},
     {"symbol": "QQQ", "shortname": "Invesco QQQ Trust", "quoteType": "ETF", "exchDisp": "NASDAQ"},
     {"symbol": "", "shortname": "broken", "quoteType": "EQUITY"},
+    {
+        "symbol": "BTC-USD",
+        "shortname": "Bitcoin USD",
+        "quoteType": "CRYPTOCURRENCY",
+        "exchDisp": "CCC",
+    },
+    {"symbol": "BTC=F", "shortname": "Bitcoin Futures", "quoteType": "FUTURE"},
+]
+
+# Rows in the shape of `yf.screen("all_cryptocurrencies_us")["quotes"]`.
+SCREEN_QUOTES = [
+    {
+        "symbol": "BTC-USD",
+        "shortName": "Bitcoin USD",
+        "regularMarketPrice": 65000.0,
+        "regularMarketChangePercent": 1.5,
+        "marketCap": 1.3e12,
+        "regularMarketVolume": 30_000_000_000,
+        "volume24Hr": 31_000_000_000,
+        "circulatingSupply": 20_000_000,
+    },
+    {
+        "symbol": "ETH-USD",
+        "longName": "Ethereum USD",
+        "regularMarketPrice": 3200.0,
+        "regularMarketChangePercent": -0.75,
+        "marketCap": 3.9e11,
+        "regularMarketVolume": 12_000_000_000,
+        "circulatingSupply": 120_000_000,
+    },
+    {"symbol": "BROKEN-USD", "shortName": "No price"},
+    {
+        "symbol": "SOL-USD",
+        "shortName": "Solana USD",
+        "regularMarketPrice": 150.0,
+        "marketCap": 7e10,
+    },
 ]
 
 RECOMMENDATIONS = pd.DataFrame(
@@ -167,6 +214,12 @@ class FakeYF:
 
     def Search(self, query: str, **kwargs: object) -> FakeSearch:  # noqa: N802
         return FakeSearch(query, self, **kwargs)
+
+    def screen(self, query: str, count: int = 25, **_: object) -> dict:
+        self.maybe_raise()
+        FakeTicker.calls.append(("screen", f"{query}:{count}"))
+        rows = SCREEN_QUOTES[:count] if query == "all_cryptocurrencies_us" else []
+        return {"quotes": rows, "count": len(rows), "total": len(SCREEN_QUOTES)}
 
     # Convenience constructors for error scenarios.
     def fail_with_rate_limit(self) -> None:

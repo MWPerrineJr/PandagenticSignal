@@ -3,6 +3,7 @@ import { isWidgetType, WIDGET_SIZES, WIDGET_TITLES, WIDGET_TYPES, type WidgetCon
 import { QuoteWidget, QuoteWidgetSettings } from './quote-widget'
 import { WatchlistWidget, WatchlistWidgetSettings } from './watchlist-widget'
 import { AnalystWidget, AnalystWidgetSettings } from './analyst-widget'
+import { CryptoWidget, CryptoWidgetSettings } from './crypto-widget'
 
 // Chart-based widgets pull in lightweight-charts; load them on demand so the dashboard route
 // (the index page) does not carry the chart library in the main bundle.
@@ -80,6 +81,15 @@ export const WIDGET_REGISTRY: { [T in WidgetType]: WidgetDefinition<T> } = {
     Component: CompareWidget,
     Settings: CompareWidgetSettings,
     subtitle: (c) => (c.symbols.length ? c.symbols.join(' · ') : 'tracked symbols'),
+  },
+  crypto: {
+    type: 'crypto',
+    title: WIDGET_TITLES.crypto,
+    description: 'Top coins by market cap with 24h change',
+    size: WIDGET_SIZES.crypto,
+    Component: CryptoWidget,
+    Settings: CryptoWidgetSettings,
+    subtitle: (c) => `top ${c.limit}`,
   },
 }
 

@@ -104,6 +104,34 @@ def test_upstream_failure_is_502(client: TestClient, fake_yf: FakeYF) -> None:
     assert "Yahoo Finance" in r.json()["detail"]
 
 
+def test_crypto_top(client: TestClient) -> None:
+    r = client.get("/crypto/top", params={"limit": 2})
+    assert r.status_code == 200
+    body = r.json()
+    assert isinstance(body["as_of"], int)
+    assert [c["symbol"] for c in body["coins"]] == ["BTC-USD", "ETH-USD"]
+    assert set(body["coins"][0]) == {
+        "symbol",
+        "name",
+        "price",
+        "change_pct",
+        "market_cap",
+        "volume",
+        "circulating_supply",
+    }
+    assert client.get("/crypto/top").status_code == 200  # default limit
+
+
+def test_crypto_top_validation(client: TestClient) -> None:
+    assert client.get("/crypto/top", params={"limit": 0}).status_code == 422
+    assert client.get("/crypto/top", params={"limit": 500}).status_code == 422
+
+
+def test_crypto_top_upstream_failure_is_502(client: TestClient, fake_yf: FakeYF) -> None:
+    fake_yf.fail_with_upstream()
+    assert client.get("/crypto/top").status_code == 502
+
+
 def test_cors_allows_dev_origin(client: TestClient) -> None:
     r = client.get("/health", headers={"Origin": "http://localhost:5173"})
     assert r.headers.get("access-control-allow-origin") == "http://localhost:5173"

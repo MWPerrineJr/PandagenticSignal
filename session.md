@@ -1,6 +1,6 @@
 # Session Log — Stock Analysis Tool
 
-Last updated: 2026-09-08 (evening)
+Last updated: 2026-09-11
 
 ## Conversation summary
 
@@ -47,6 +47,12 @@ Last updated: 2026-09-08 (evening)
 33. **Phase 7 closed (2026-09-08).** Pushes did not auto-deploy on Render after the resume, so "Deploy latest commit" was triggered by hand (94db5d6 live). The blueprint's env change also needed a **Manual sync** + Approve on the blueprint page (Render treats new env vars from `render.yaml` as an approval step). After that the API sends the CORS header for `https://pandagenticsignal.com`. **Final checkpoint:** `E2E_BASE_URL=https://pandagenticsignal.com npx playwright test` → 3/3 passed in 12.7 s against the published site + Render API + live Yahoo data. CI green on PandagenticSignal.
 
 34. **Expansion planned (2026-09-08 evening).** The user asked for four new sections: Crypto, Retirement analysis, Portfolio builder with Monte Carlo, and an AI news-sentiment agent. Explored the codebase, probed yfinance (crypto quotes/history/screener/news all work), loaded the Claude API skill, and confirmed four decisions with the user (yfinance news, on-demand + 1 h cache with `claude-opus-5`, retirement = projection + MC success probability, crypto tab + crypto everywhere). Plan approved as Phases 8–11; full text below under "Expansion plan" and at `~/.claude/plans/now-i-want-to-mighty-possum.md`. Nothing implemented yet.
+
+35. **Revert of an accidental edit (2026-09-11).** Commit `1af0797` "update files" (Sep 9, local) had deleted `day_high/day_low/year_high/year_low` from the API `Quote` schema and broke ruff format + two tests; CI was red and the commit never deployed to Render. The user did not remember making it, so it was reverted with a new commit (`4c8745c`, no history rewrite). CI green again.
+
+36. **iCloud eviction was hanging every test run (2026-09-11).** `~/Documents` is iCloud Drive ("Desktop & Documents"), and ~10,600 files under `node_modules/` and `api/.venv/` had been evicted to placeholders (`ls -lO` shows `dataless`). Symptoms: `import app.main` took 40+ s (scipy), vitest failed every file with "Failed to start forks worker … Timeout waiting for worker to respond", CPU idle throughout. Fix: `find . -type f -flags +dataless -print0 | xargs -0 -P 16 cat > /dev/null` (about 11 min), after which everything ran at normal speed. **Recommendation for the user:** move the repo out of iCloud (e.g. `~/dev/stock-tool`) or turn off "Optimize Mac Storage"; otherwise this will recur. Check with `find . -type f -flags +dataless | wc -l`.
+
+37. **Phase 8 (Crypto) built (2026-09-11).** API: `GET /crypto/top?limit=1..100` from `yf.screen("all_cryptocurrencies_us")` (cache ns `crypto_top`, TTL `crypto_ttl`=60 s), `SEARCH_TYPES` now includes `CRYPTOCURRENCY`, `Quote.quote_type` from `fast_info["quote_type"]`. Frontend: Crypto tab (top-25 table with 24h %, market cap, 24h volume, supply, 1M sparkline, star = track; coin detail = QuoteCard + 6M chart), `crypto` dashboard widget (top-N rows), "Crypto" badge in search results, quote card says "Crypto · USD", "Volume (24h)" and "24h range" for coins, `formatPrice` keeps 4–6 decimals under $1, `formatPct` added, shadcn `table` primitive installed. Verified live locally: `/crypto/top?limit=3` (BTC, ETH, USDT), `/search?q=bitcoin` (BTC-USD tagged CRYPTOCURRENCY), `/quote/BTC-USD` (`quote_type` set; note `fast_info` market cap is null for coins, the screener has it). Tests: API 76 passed (99% coverage), frontend 144 tests / 25 files, e2e spec gained a Crypto test.
 
 ## Repository state
 
@@ -194,6 +200,12 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] README with architecture, run, test and deploy instructions
 - [x] Final test checkpoint: CI green on PandagenticSignal, Playwright 3/3 against https://pandagenticsignal.com
 
+### Phase 8 — Crypto
+- [x] API: `/crypto/top`, crypto in search, `Quote.quote_type`, `crypto_ttl`; fakes + 6 new tests
+- [x] Frontend: Crypto tab (`src/features/crypto/`), `crypto` widget, search badge, quote-card labels, `formatPrice`/`formatPct`
+- [x] Tests: `crypto-page.test.tsx` (6), `crypto-widget.test.tsx` (3), `format.test.ts`, api client tests; e2e "crypto tab" test
+- [ ] Checkpoint: commit + push, Render deploy verified (`/crypto/top?limit=3`, `/search?q=bitcoin`), Playwright 4/4 against pandagenticsignal.com
+
 ## Notes for later phases
 
 - `/history` and `/indicators` emit `time` as Unix seconds UTC. lightweight-charts wants `yyyy-mm-dd` strings for daily bars to avoid timezone date shifts; convert on the frontend in Phase 3 when `interval` is `1d` or coarser.
@@ -218,9 +230,11 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 
 ## Pick up here
 
-**Where things stand (2026-09-08, end of day):** All phases 0–7 are closed. The app is live.
-**Tomorrow: start Phase 8 (Crypto)** from the "Expansion plan" section at the bottom of this file.
-Pull first (`git pull`), then follow the phase's API → frontend → tests → checkpoint order.
+**Where things stand (2026-09-11):** Phases 0–7 closed and live; Phase 8 (Crypto) built and tested
+locally (see note 37 and the Phase 8 checklist for the deploy checkpoint status).
+**Next: Phase 9 (Portfolio builder + Monte Carlo)** from the "Expansion plan" section at the bottom of
+this file. Pull first (`git pull`), then follow the phase's engine → API → frontend → tests → checkpoint order.
+**Before anything else on this Mac:** `find . -type f -flags +dataless | wc -l` must be 0 (note 36).
 
 **Live pieces:**
 - Site: https://pandagenticsignal.com (Lovable-published, custom domain; www redirects). Lovable project

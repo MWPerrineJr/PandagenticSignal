@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     quote_ttl: int = 60
     history_ttl: int = 60 * 5
     recommendations_ttl: int = 60 * 60
+    crypto_ttl: int = 60
 
     # Per-client rate limit (slowapi syntax), keyed by forwarded client IP.
     rate_limit: str = "120/minute"
