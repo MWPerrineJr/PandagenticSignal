@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { cryptoTopFixture, makeIndicators, makePortfolioStats, makeRetirement, makeSentiment, makeSimulation, quoteFixtures, recommendationsFixture, searchFixtures } from './fixtures'
+import { cryptoTopFixture, indicatorCatalogFixture, makeIndicators, makePortfolioStats, makeRetirement, makeSentiment, makeSimulation, quoteFixtures, recommendationsFixture, searchFixtures } from './fixtures'
 import type { RetirementRequest } from '@/lib/api'
 
 import { API_URL } from '@/lib/api'
@@ -47,12 +47,15 @@ export const handlers = [
     })
   }),
 
+  http.get(`${API_URL}/indicators/catalog`, () => HttpResponse.json(indicatorCatalogFixture)),
+
   http.get(`${API_URL}/indicators/:symbol`, ({ params, request }) => {
     const symbol = String(params.symbol).toUpperCase()
     if (!quoteFixtures[symbol]) return notFound(symbol)
     const url = new URL(request.url)
+    const ind = url.searchParams.get('ind')
     return HttpResponse.json({
-      ...makeIndicators(symbol),
+      ...makeIndicators(symbol, 30, ind ? ind.split(',') : undefined),
       period: url.searchParams.get('period') ?? '1y',
       interval: url.searchParams.get('interval') ?? '1d',
     })

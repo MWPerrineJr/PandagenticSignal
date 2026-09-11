@@ -1,3 +1,6 @@
+import indicatorCatalogJson from './fixtures/indicator-catalog.json'
+import { DEFAULT_TOKENS, canonicalToken, specOf, tokenValues } from '@/lib/indicators'
+import { indicatorCatalogSchema } from '@/lib/api'
 import type { CryptoTop, Indicators, PortfolioStats, Quote, Recommendations, RetirementOut, RetirementRequest, SearchResult, SentimentOut, Simulation } from '@/lib/api'
 import { projectDeterministic } from '@/lib/retirement'
 
@@ -85,6 +88,8 @@ export const cryptoTopFixture: CryptoTop = {
 }
 
 const DAY = 86_400
+export const indicatorCatalogFixture = indicatorCatalogSchema.parse(indicatorCatalogJson)
+
 export function makeCandles(n = 30, start = 1_767_312_000): Indicators['candles'] {
   return Array.from({ length: n }, (_, i) => {
     const close = 100 + Math.sin(i / 3) * 5
@@ -92,21 +97,39 @@ export function makeCandles(n = 30, start = 1_767_312_000): Indicators['candles'
   })
 }
 
-export function makeIndicators(symbol = 'AAPL', n = 30): Indicators {
+/** Fake indicator outputs for any request tokens: each output is the close plus a small offset
+ * (overlays) or 50 plus the offset (panes), null for the first 19 bars, so every catalog entry
+ * renders without real maths. */
+export function makeIndicators(symbol = 'AAPL', n = 30, tokens: readonly string[] = DEFAULT_TOKENS): Indicators {
   const candles = makeCandles(n)
   const closes = candles.map((c) => c.close)
-  const series = (offset: number) => closes.map((c, i) => (i < 19 ? null : c + offset))
+  const series: Indicators['series'] = {}
+  let offset = 0
+  for (const raw of tokens) {
+    const token = canonicalToken(raw, indicatorCatalogFixture)
+    if (!token || series[token]) continue
+    const spec = specOf(token, indicatorCatalogFixture)!
+    const params = Object.fromEntries(spec.params.map((p, i) => [p.name, tokenValues(token)[i] ?? p.default]))
+    const outputs: Record<string, Array<number | null>> = {}
+    for (const name of spec.outputs) {
+      offset += 1
+      const o = offset
+      outputs[name] = closes.map((c, i) => (i < 19 ? null : spec.kind === 'overlay' ? c + o : 50 + o))
+    }
+    series[token] = { id: spec.id, kind: spec.kind, params, outputs }
+  }
   return {
     symbol,
     period: '1y',
     interval: '1d',
     candles,
-    ema: { '10': closes, '30': closes, '60': closes, '90': closes },
-    bollinger: { window: 20, k: 2, middle: series(0), upper: series(2), lower: series(-2) },
-    levels: [
-      { price: 105, touches: 4, kind: 'resistance' },
-      { price: 95, touches: 3, kind: 'support' },
-    ],
+    series,
+    levels: tokens.includes('sr')
+      ? [
+          { price: 105, touches: 4, kind: 'resistance' },
+          { price: 95, touches: 3, kind: 'support' },
+        ]
+      : [],
   }
 }
 

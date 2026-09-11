@@ -9,18 +9,29 @@ export interface FakeSeries {
   options: Record<string, unknown>
   data: unknown[]
   priceLines: FakePriceLine[]
+  paneIndex: number
+  primitives: unknown[]
   removed: boolean
   setData: ReturnType<typeof vi.fn>
   applyOptions: ReturnType<typeof vi.fn>
   createPriceLine: ReturnType<typeof vi.fn>
   removePriceLine: ReturnType<typeof vi.fn>
+  attachPrimitive: ReturnType<typeof vi.fn>
 }
 export interface FakePriceLine {
   options: Record<string, unknown>
   removed: boolean
 }
+export interface FakePane {
+  stretch: number
+  setStretchFactor: ReturnType<typeof vi.fn>
+  setHeight: ReturnType<typeof vi.fn>
+}
 export interface FakeChart {
   series: FakeSeries[]
+  paneList: FakePane[]
+  panes: ReturnType<typeof vi.fn>
+  removePane: ReturnType<typeof vi.fn>
   options: Record<string, unknown>[]
   crosshairHandlers: Set<(p: unknown) => void>
   removed: boolean
@@ -39,13 +50,18 @@ export interface FakeChart {
 
 export const charts: FakeChart[] = []
 
-function makeSeries(kind: string, options: Record<string, unknown>): FakeSeries {
+function makeSeries(kind: string, options: Record<string, unknown>, paneIndex: number): FakeSeries {
   const s: FakeSeries = {
     kind,
     options: { ...options },
     data: [],
     priceLines: [],
+    paneIndex,
+    primitives: [],
     removed: false,
+    attachPrimitive: vi.fn((p: unknown) => {
+      s.primitives.push(p)
+    }),
     setData: vi.fn((data: unknown[]) => {
       s.data = data
     }),
@@ -63,16 +79,33 @@ function makeSeries(kind: string, options: Record<string, unknown>): FakeSeries 
   return s
 }
 
+function makePane(): FakePane {
+  const p: FakePane = {
+    stretch: 1,
+    setStretchFactor: vi.fn((f: number) => {
+      p.stretch = f
+    }),
+    setHeight: vi.fn(),
+  }
+  return p
+}
+
 export function createChart(): FakeChart {
   const chart: FakeChart = {
     series: [],
+    paneList: [makePane()],
     options: [],
     crosshairHandlers: new Set(),
     removed: false,
-    addSeries: vi.fn((def: { type: string }, options: Record<string, unknown> = {}) => {
-      const s = makeSeries(def.type, options)
+    addSeries: vi.fn((def: { type: string }, options: Record<string, unknown> = {}, paneIndex = 0) => {
+      while (chart.paneList.length <= paneIndex) chart.paneList.push(makePane())
+      const s = makeSeries(def.type, options, paneIndex)
       chart.series.push(s)
       return s
+    }),
+    panes: vi.fn(() => chart.paneList),
+    removePane: vi.fn((index: number) => {
+      chart.paneList.splice(index, 1)
     }),
     removeSeries: vi.fn((s: FakeSeries) => {
       s.removed = true

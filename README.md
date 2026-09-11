@@ -12,12 +12,13 @@ devices. Market data comes from [yfinance](https://github.com/ranaroussi/yfinanc
 Browser ──► React app (repo root: Vite + TS + Tailwind + shadcn/ui)   ← Lovable imports this
                 │
                 ├──► FastAPI + yfinance service (api/)                ← Docker on Render/Railway
-                │      /search /quote /quotes /history /indicators /recommendations
+                │      /search /quote /quotes /history /indicators (+/catalog) /recommendations
                 │      /crypto/top  POST /portfolio/analyse  POST /portfolio/simulate
                 │      POST /retirement/project  /sentiment/{ticker} (Claude, optional key)
                 │      in-process cache, per-IP rate limit, JSON logs
                 │
-                └──► Supabase (auth, watchlists, dashboards, portfolios) ← supabase/migrations, RLS
+                └──► Supabase (auth, watchlists, dashboards, portfolios, indicator settings)
+                     ← supabase/migrations, RLS
 ```
 
 The frontend lives at the repository root because Lovable's GitHub import expects a Vite
@@ -137,5 +138,10 @@ API (`api/.env`, prefix `STOCK_API_`): `CORS_ORIGINS`, `CORS_ORIGIN_REGEX`, `RAT
 
 Data sources: Yahoo Finance via yfinance for stocks, ETFs and search; Coinbase's public market API for
 crypto prices and candles; CoinGecko's public API for the crypto market-cap ranking. All keyless.
+Technical indicators (20: SMA, EMA, Bollinger, VWAP, Parabolic SAR, Ichimoku, Keltner, Donchian,
+support/resistance, pivots; RSI, MACD, Stochastic, ADX, ATR, CCI, OBV, Williams %R, MFI, ROC) are
+computed on the API from the same candles for stocks and crypto; `GET /indicators/catalog` lists
+them with parameter ranges, `GET /indicators/{ticker}?ind=rsi:14,macd` computes up to eight per
+request. The picker's selection is saved to the account (`indicator_settings`) or the browser.
 News sentiment reads Yahoo's headline feed and asks Claude (Anthropic API, paid, needs a key) for a
 structured tone summary, cached per symbol for an hour. It is a summary of coverage, not advice.

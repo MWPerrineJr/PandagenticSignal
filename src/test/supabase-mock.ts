@@ -20,7 +20,7 @@ let seq = 0
 const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`
 
 export const state: State = {
-  tables: { watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [] },
+  tables: { watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [], indicator_settings: [] },
   users: new Map(),
   session: null,
   listeners: new Set(),
@@ -28,7 +28,7 @@ export const state: State = {
 }
 
 export function resetSupabaseMock() {
-  state.tables = { watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [] }
+  state.tables = { watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [], indicator_settings: [] }
   state.users.clear()
   state.session = null
   state.listeners.clear()

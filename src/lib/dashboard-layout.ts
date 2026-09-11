@@ -4,7 +4,7 @@
  */
 import { z } from 'zod'
 import { CHART_INTERVALS, CHART_PERIODS } from './use-chart-params'
-import { OVERLAY_IDS } from './chart-data'
+import { DEFAULT_TOKENS, fromLegacy, tokenListSchema } from './indicators'
 
 export const LAYOUT_VERSION = 1 as const
 export const GRID_COLS = 12
@@ -24,7 +24,7 @@ export const WIDGET_CONFIG_SCHEMAS = {
     symbol: symbolOrFollow,
     period: z.enum(CHART_PERIODS).default('6mo'),
     interval: z.enum(CHART_INTERVALS).default('1d'),
-    overlays: z.array(z.enum(OVERLAY_IDS)).default(['ema10', 'ema30', 'sr']),
+    indicators: tokenListSchema.default([...DEFAULT_TOKENS]),
   }),
   watchlist: z.object({ limit: z.number().int().min(1).max(20).default(10) }),
   analyst: z.object({ symbol: symbolOrFollow }),
@@ -102,8 +102,17 @@ export function parseWidgetConfig<T extends WidgetType>(type: T, raw: unknown): 
 export function parseWidgetConfig(type: string, raw: unknown): Record<string, unknown>
 export function parseWidgetConfig(type: string, raw: unknown) {
   if (!isWidgetType(type)) return {}
-  const result = WIDGET_CONFIG_SCHEMAS[type].safeParse(raw ?? {})
+  const result = WIDGET_CONFIG_SCHEMAS[type].safeParse(migrateConfig(type, raw ?? {}))
   return result.success ? result.data : WIDGET_CONFIG_SCHEMAS[type].parse({})
+}
+
+/** Pre-Phase-12 chart widgets stored `overlays: ['ema10', …]`; carry them into `indicators` once. */
+function migrateConfig(type: WidgetType, raw: unknown): unknown {
+  if (type !== 'chart' || !raw || typeof raw !== 'object') return raw
+  const r = raw as { overlays?: unknown; indicators?: unknown }
+  if (r.indicators !== undefined || !Array.isArray(r.overlays)) return raw
+  const { overlays, ...rest } = r
+  return { ...rest, indicators: fromLegacy(overlays.filter((o): o is string => typeof o === 'string')) }
 }
 
 export function starterLayout(): DashboardLayout {

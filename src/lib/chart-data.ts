@@ -78,29 +78,6 @@ export function toLine(candles: Candle[], values: Array<number | null>, interval
   return out
 }
 
-export const EMA_SPANS = ['10', '30', '60', '90'] as const
-export type EmaSpan = (typeof EMA_SPANS)[number]
-
-export const OVERLAY_IDS = ['ema10', 'ema30', 'ema60', 'ema90', 'bb', 'sr'] as const
-export type OverlayId = (typeof OVERLAY_IDS)[number]
-
-export const OVERLAY_LABELS: Record<OverlayId, string> = {
-  ema10: 'EMA 10',
-  ema30: 'EMA 30',
-  ema60: 'EMA 60',
-  ema90: 'EMA 90',
-  bb: 'Bollinger',
-  sr: 'S/R',
-}
-
-export function isOverlayId(value: string): value is OverlayId {
-  return (OVERLAY_IDS as readonly string[]).includes(value)
-}
-
-export function emaSpanOf(id: OverlayId): EmaSpan | null {
-  return id.startsWith('ema') ? (id.slice(3) as EmaSpan) : null
-}
-
 export interface LevelLine {
   price: number
   title: string

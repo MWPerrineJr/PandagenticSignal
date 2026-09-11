@@ -32,7 +32,12 @@ describe('dashboard layout model', () => {
         { id: 'b', type: 'heatmap', config: { foo: 1 }, grid: { x: 6, y: 0, w: 6, h: 6 } },
       ],
     })
-    expect(parsed.widgets[0]!.config).toEqual({ symbol: 'AAPL', period: '6mo', interval: '1d', overlays: ['ema10', 'ema30', 'sr'] })
+    expect(parsed.widgets[0]!.config).toEqual({
+      symbol: 'AAPL',
+      period: '6mo',
+      interval: '1d',
+      indicators: ['ema:10', 'ema:30', 'ema:60', 'ema:90', 'bb:20-2', 'sr'],
+    })
     expect(parsed.widgets[1]).toMatchObject({ type: 'heatmap', config: {} })
   })
 
@@ -50,6 +55,10 @@ describe('dashboard layout model', () => {
 
   it('parseWidgetConfig falls back to defaults on bad values', () => {
     expect(parseWidgetConfig('chart', { period: 'bogus' })).toMatchObject({ period: '6mo' })
+    // Pre-Phase-12 configs carried `overlays`; they become tokens once, then `indicators` wins.
+    expect(parseWidgetConfig('chart', { overlays: ['ema10', 'bb', 'nope'] })).toMatchObject({ indicators: ['ema:10', 'bb:20-2'] })
+    expect(parseWidgetConfig('chart', { overlays: ['ema10'], indicators: ['rsi:14'] })).toMatchObject({ indicators: ['rsi:14'] })
+    expect(parseWidgetConfig('chart', { indicators: ['drop;me'] })).toMatchObject({ indicators: ['ema:10', 'ema:30', 'ema:60', 'ema:90', 'bb:20-2', 'sr'] })
     expect(parseWidgetConfig('watchlist', { limit: 500 })).toEqual({ limit: 10 })
     expect(parseWidgetConfig('nope', { a: 1 })).toEqual({})
   })

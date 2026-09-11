@@ -214,18 +214,19 @@ class History(BaseModel):
     candles: list[Candle]
 
 
-class BollingerSeries(BaseModel):
-    window: int
-    k: float
-    middle: list[float | None]
-    upper: list[float | None]
-    lower: list[float | None]
-
-
 class LevelOut(BaseModel):
     price: float
     touches: int
     kind: Literal["support", "resistance"]
+
+
+class IndicatorSeriesOut(BaseModel):
+    """One computed indicator, keyed in `Indicators.series` by its canonical token."""
+
+    id: str
+    kind: Literal["overlay", "pane"]
+    params: dict[str, float]
+    outputs: dict[str, list[float | None]]
 
 
 class Indicators(BaseModel):
@@ -233,9 +234,35 @@ class Indicators(BaseModel):
     period: str
     interval: str
     candles: list[Candle]
-    ema: dict[str, list[float | None]]
-    bollinger: BollingerSeries
+    #: Requested indicators in request order, keyed by canonical token (`rsi:14`, `bb:20-2`).
+    series: dict[str, IndicatorSeriesOut]
+    #: Support/resistance levels; populated only when the `sr` token is requested.
     levels: list[LevelOut]
+
+
+class IndicatorParamOut(BaseModel):
+    name: str
+    default: float
+    min: float
+    max: float
+    integer: bool
+
+
+class IndicatorSpecOut(BaseModel):
+    id: str
+    name: str
+    kind: Literal["overlay", "pane"]
+    outputs: list[str]
+    params: list[IndicatorParamOut]
+    reference_lines: list[float]
+    description: str
+    formula: str
+
+
+class IndicatorCatalog(BaseModel):
+    indicators: list[IndicatorSpecOut]
+    defaults: list[str]
+    max_per_request: int
 
 
 class RecommendationPeriod(BaseModel):

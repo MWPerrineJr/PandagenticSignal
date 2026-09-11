@@ -22,18 +22,24 @@ test.describe('smoke (live data, signed out)', () => {
     await expect(quote).toContainText('AAPL')
     await expect(quote.getByText(/^\$\d[\d,]*\.\d{2}$/).first()).toBeVisible()
 
-    // Charts: candles render, overlays toggle and persist in the URL.
+    // Charts: candles render with the default indicators; the picker adds an oscillator pane.
     await page.getByRole('link', { name: 'Charts' }).click()
     await expect(page.getByTestId('price-chart')).toBeVisible()
     await expect(page.getByTestId('chart-legend')).toContainText('EMA 10')
-    const bollinger = page.getByRole('button', { name: /Bollinger/ })
-    await expect(bollinger).toHaveAttribute('aria-pressed', 'true')
-    await bollinger.click()
-    await expect(bollinger).toHaveAttribute('aria-pressed', 'false')
-    await expect(page).toHaveURL(/ov=/)
+    await expect(page.getByTestId('chart-legend')).toContainText('BB 20/2')
+    await page.getByRole('button', { name: /indicators/i }).click()
+    const picker = page.getByRole('dialog', { name: 'Indicators' })
+    await picker.getByRole('button', { name: 'Remove BB 20/2' }).click()
+    await picker.getByRole('combobox', { name: 'Add indicator' }).selectOption('rsi')
+    await picker.getByRole('combobox', { name: 'Add indicator' }).selectOption('macd')
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('chart-legend')).toContainText('RSI 14')
+    await expect(page.getByTestId('chart-legend')).toContainText('MACD 12/26/9')
+    await expect(page.getByTestId('chart-legend')).not.toContainText('BB 20/2')
+    await expect(page.getByTestId('indicator-count')).toHaveText('7')
     await page.getByRole('radio', { name: '6M' }).click()
     await expect(page).toHaveURL(/period=6mo/)
-    await expect(page.getByText(/bars · daily/)).toBeVisible()
+    await expect(page.getByText(/bars · daily · 7 indicators/)).toBeVisible()
 
     // Watchlist: track AAPL from the dashboard, add MSFT by search, remove it again.
     await page.getByRole('link', { name: 'Dashboard' }).click()
@@ -69,6 +75,11 @@ test.describe('smoke (live data, signed out)', () => {
     const detail = page.getByTestId('coin-detail')
     await expect(detail).toContainText('Crypto · USD')
     await expect(detail.getByTestId('price-chart')).toBeVisible()
+    // The same indicator picker works on coins (RSI is computed from Coinbase candles).
+    await detail.getByRole('button', { name: /indicators/i }).click()
+    await page.getByRole('dialog', { name: 'Indicators' }).getByRole('combobox', { name: 'Add indicator' }).selectOption('rsi')
+    await page.keyboard.press('Escape')
+    await expect(detail.getByTestId('chart-legend')).toContainText('RSI 14')
 
     // The header search finds coins and labels them.
     const search = page.getByRole('combobox', { name: 'Search symbol or company' })

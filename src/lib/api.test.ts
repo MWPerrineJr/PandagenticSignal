@@ -61,8 +61,9 @@ describe('api client', () => {
   it('parses indicators and recommendations', async () => {
     const ind = await api.indicators('AAPL')
     expect(ind.candles).toHaveLength(30)
-    expect(ind.ema['10']).toHaveLength(30)
-    expect(ind.bollinger.middle[0]).toBeNull()
+    expect(Object.keys(ind.series)).toEqual(['ema:10', 'ema:30', 'ema:60', 'ema:90', 'bb:20-2', 'sr'])
+    expect(ind.series['ema:10']!.outputs.ema).toHaveLength(30)
+    expect(ind.series['bb:20-2']!.outputs.middle![0]).toBeNull()
     expect(ind.levels[0]?.kind).toBe('resistance')
 
     const rec = await api.recommendations('AAPL')

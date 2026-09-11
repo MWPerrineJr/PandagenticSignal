@@ -1,14 +1,17 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { ApiError, type Candle } from '@/lib/api'
-import { useHistories, useIndicators } from '@/lib/queries'
+import { useHistories, useIndicatorCatalog, useIndicators } from '@/lib/queries'
 import { useTicker } from '@/lib/use-ticker'
 import { useChartParams } from '@/lib/use-chart-params'
+import { useIndicatorSelection } from '@/lib/use-indicator-selection'
+import { normaliseTokens } from '@/lib/indicators'
 import { normaliseSeries } from '@/lib/compare'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyTicker } from '@/features/empty-ticker'
 import { ChartControls } from './chart-controls'
 import { ComparePicker } from './compare-picker'
 import { CompareChart } from './compare-chart'
+import { IndicatorPicker } from './indicator-picker'
 import { PriceChart } from './price-chart'
 
 function errorMessage(error: unknown, ticker: string): string {
@@ -18,9 +21,19 @@ function errorMessage(error: unknown, ticker: string): string {
 
 export function ChartsPage() {
   const [ticker] = useTicker()
-  const { period, interval, overlays, compare, setPeriod, setInterval, toggleOverlay, toggleCompare, setCompare } =
+  const { period, interval, compare, sharedIndicators, clearSharedIndicators, setPeriod, setInterval, toggleCompare, setCompare } =
     useChartParams()
+  const catalog = useIndicatorCatalog()
+  const selection = useIndicatorSelection()
   const compareMode = compare.length > 0
+
+  // A shared link (`?ind=…`) replaces the saved selection once, then leaves the URL.
+  useEffect(() => {
+    if (!sharedIndicators || !catalog.data) return
+    selection.setTokens(normaliseTokens(sharedIndicators, catalog.data))
+    clearSharedIndicators()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharedIndicators, catalog.data])
 
   return (
     <section aria-labelledby="charts-heading" className="space-y-4">
@@ -29,15 +42,16 @@ export function ChartsPage() {
           Charts{ticker && <span className="ml-2 font-mono text-muted-foreground">{ticker}</span>}
         </h1>
         {ticker && (
-          <ChartControls
-            period={period}
-            interval={interval}
-            overlays={overlays}
-            onPeriod={setPeriod}
-            onInterval={setInterval}
-            onToggleOverlay={toggleOverlay}
-            overlaysDisabled={compareMode}
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            <ChartControls period={period} interval={interval} onPeriod={setPeriod} onInterval={setInterval} />
+            <IndicatorPicker
+              catalog={catalog.data}
+              tokens={selection.tokens}
+              onChange={selection.setTokens}
+              onReset={selection.reset}
+              disabled={compareMode}
+            />
+          </div>
         )}
       </div>
 
@@ -46,11 +60,11 @@ export function ChartsPage() {
       )}
 
       {!ticker ? (
-        <EmptyTicker hint="Pick a symbol to see candlesticks with EMA, Bollinger Bands and support/resistance." />
+        <EmptyTicker hint="Pick a symbol to see candlesticks with your choice of indicators." />
       ) : compareMode ? (
         <CompareView ticker={ticker} compare={compare} period={period} interval={interval} />
       ) : (
-        <IndicatorView ticker={ticker} period={period} interval={interval} overlays={overlays} />
+        <IndicatorView ticker={ticker} period={period} interval={interval} tokens={selection.tokens} source={selection.source} />
       )}
     </section>
   )
@@ -58,8 +72,8 @@ export function ChartsPage() {
 
 type ViewProps = { ticker: string; period: ReturnType<typeof useChartParams>['period']; interval: ReturnType<typeof useChartParams>['interval'] }
 
-function IndicatorView({ ticker, period, interval, overlays }: ViewProps & { overlays: ReturnType<typeof useChartParams>['overlays'] }) {
-  const { data, isPending, isError, error, isFetching } = useIndicators(ticker, period, interval)
+function IndicatorView({ ticker, period, interval, tokens, source }: ViewProps & { tokens: string[]; source: 'local' | 'cloud' }) {
+  const { data, isPending, isError, error, isFetching } = useIndicators(ticker, period, interval, tokens)
   if (isPending) return <Skeleton className="h-[480px] w-full" aria-busy aria-label="Loading chart" />
   if (isError) {
     return (
@@ -68,12 +82,14 @@ function IndicatorView({ ticker, period, interval, overlays }: ViewProps & { ove
       </div>
     )
   }
+  const panes = Object.values(data.series).filter((s) => s.kind === 'pane').length
   return (
-    <div className={isFetching ? 'opacity-70 transition-opacity' : 'transition-opacity'}>
-      <PriceChart data={data} overlays={overlays} className="rounded-lg border" />
-      <p className="mt-2 text-xs text-muted-foreground">
-        {data.candles.length} bars · {interval === '1wk' ? 'weekly' : 'daily'} · Bollinger {data.bollinger.window}/
-        {data.bollinger.k}σ · {data.levels.length} S/R levels
+    <div className="space-y-2">
+      <PriceChart data={data} className="rounded-lg border" height={480 + panes * 120} />
+      <p className="text-xs text-muted-foreground">
+        {data.candles.length} bars · {interval === '1wk' ? 'weekly' : 'daily'} · {Object.keys(data.series).length} indicators
+        {source === 'cloud' ? ' · selection saved to your account' : ' · selection saved in this browser'}
+        {isFetching && ' · updating…'}
       </p>
     </div>
   )

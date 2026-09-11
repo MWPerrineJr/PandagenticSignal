@@ -1,9 +1,7 @@
 import { makeIndicators } from '@/test/fixtures'
 import {
-  emaSpanOf,
   indexAtTime,
   isIntraday,
-  isOverlayId,
   lastValue,
   toCandles,
   toChartTime,
@@ -87,9 +85,5 @@ describe('series mapping', () => {
   })
 
   it('overlay id helpers', () => {
-    expect(isOverlayId('ema10')).toBe(true)
-    expect(isOverlayId('rsi')).toBe(false)
-    expect(emaSpanOf('ema60')).toBe('60')
-    expect(emaSpanOf('bb')).toBeNull()
   })
 })

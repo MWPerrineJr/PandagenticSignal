@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { normaliseSymbol, type Interval, type Period } from './api'
-import { OVERLAY_IDS, isOverlayId, type OverlayId } from './chart-data'
+import { fromLegacy, tokenListSchema } from './indicators'
 import { MAX_COMPARE } from './viz-palette'
 
 export const CHART_PERIODS = ['1mo', '3mo', '6mo', '1y', '2y', '5y'] as const satisfies readonly Period[]
@@ -21,15 +21,11 @@ export const INTERVAL_LABELS: Record<ChartInterval, string> = { '1d': 'Daily', '
 
 export const DEFAULT_PERIOD: ChartPeriod = '1y'
 export const DEFAULT_INTERVAL: ChartInterval = '1d'
-export const DEFAULT_OVERLAYS: readonly OverlayId[] = OVERLAY_IDS
-
-const PARAM = { period: 'period', interval: 'interval', overlays: 'ov', compare: 'cmp' } as const
-const NONE = 'none'
+const PARAM = { period: 'period', interval: 'interval', overlays: 'ov', indicators: 'ind', compare: 'cmp' } as const
 
 export interface ChartParams {
   period: ChartPeriod
   interval: ChartInterval
-  overlays: Set<OverlayId>
   /** Extra symbols overlaid as normalised % change; non-empty means compare mode is on. */
   compare: string[]
 }
@@ -44,16 +40,19 @@ export function parseCompare(raw: string | null): string[] {
   return out.slice(0, MAX_COMPARE - 1)
 }
 
-export function parseOverlays(raw: string | null): Set<OverlayId> {
-  if (raw === null) return new Set(DEFAULT_OVERLAYS)
-  if (raw === NONE || raw === '') return new Set()
-  return new Set(raw.split(',').filter(isOverlayId))
-}
-
-export function serialiseOverlays(overlays: Set<OverlayId>): string | null {
-  const list = OVERLAY_IDS.filter((id) => overlays.has(id))
-  if (list.length === OVERLAY_IDS.length) return null // default → keep the URL clean
-  return list.length === 0 ? NONE : list.join(',')
+/**
+ * Indicators shared through a link: `ind=rsi:14,macd` (or the pre-Phase-12 `ov=ema10,bb`).
+ * Read once by the Charts tab, applied to the saved selection, then removed from the URL.
+ */
+export function parseSharedIndicators(params: URLSearchParams): string[] | null {
+  const ind = params.get(PARAM.indicators)
+  if (ind !== null) {
+    const parsed = tokenListSchema.safeParse(ind.split(',').filter(Boolean))
+    return parsed.success ? parsed.data : null
+  }
+  const legacy = params.get(PARAM.overlays)
+  if (legacy !== null) return legacy === 'none' ? [] : fromLegacy(legacy.split(','))
+  return null
 }
 
 function pick<T extends string>(raw: string | null, allowed: readonly T[], fallback: T): T {
@@ -64,15 +63,18 @@ function pick<T extends string>(raw: string | null, allowed: readonly T[], fallb
 export function useChartParams(): ChartParams & {
   setPeriod: (period: ChartPeriod) => void
   setInterval: (interval: ChartInterval) => void
-  toggleOverlay: (id: OverlayId) => void
+  /** Tokens from a shared link, or null; `clearSharedIndicators` removes them once applied. */
+  sharedIndicators: string[] | null
+  clearSharedIndicators: () => void
   setCompare: (symbols: string[]) => void
   toggleCompare: (symbol: string) => void
 } {
   const [params, setParams] = useSearchParams()
   const period = pick(params.get(PARAM.period), CHART_PERIODS, DEFAULT_PERIOD)
   const interval = pick(params.get(PARAM.interval), CHART_INTERVALS, DEFAULT_INTERVAL)
-  const overlaysRaw = params.get(PARAM.overlays)
-  const overlays = useMemo(() => parseOverlays(overlaysRaw), [overlaysRaw])
+  const sharedRaw = `${params.get(PARAM.indicators) ?? ''}|${params.get(PARAM.overlays) ?? ''}`
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const sharedIndicators = useMemo(() => parseSharedIndicators(params), [sharedRaw])
   const compareRaw = params.get(PARAM.compare)
   const compare = useMemo(() => parseCompare(compareRaw), [compareRaw])
 
@@ -96,15 +98,17 @@ export function useChartParams(): ChartParams & {
     (i: ChartInterval) => update(PARAM.interval, i === DEFAULT_INTERVAL ? null : i),
     [update],
   )
-  const toggleOverlay = useCallback(
-    (id: OverlayId) => {
-      const next = new Set(overlays)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      update(PARAM.overlays, serialiseOverlays(next))
-    },
-    [overlays, update],
-  )
+  const clearSharedIndicators = useCallback(() => {
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete(PARAM.indicators)
+        next.delete(PARAM.overlays)
+        return next
+      },
+      { replace: true },
+    )
+  }, [setParams])
 
   const setCompare = useCallback(
     (symbols: string[]) => {
@@ -121,5 +125,5 @@ export function useChartParams(): ChartParams & {
     [compare, setCompare],
   )
 
-  return { period, interval, overlays, compare, setPeriod, setInterval, toggleOverlay, setCompare, toggleCompare }
+  return { period, interval, compare, sharedIndicators, clearSharedIndicators, setPeriod, setInterval, setCompare, toggleCompare }
 }

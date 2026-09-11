@@ -21,7 +21,7 @@ describe('compare mode', () => {
     const legend = screen.getByTestId('compare-legend')
     expect(legend).toHaveTextContent('AAPL')
     expect(legend).toHaveTextContent('MSFT')
-    expect(screen.getByRole('button', { name: /EMA 10/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /indicators/i })).toBeDisabled()
     expect(screen.queryByTestId('price-chart')).not.toBeInTheDocument()
   })
 

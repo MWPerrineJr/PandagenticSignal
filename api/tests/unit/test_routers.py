@@ -60,23 +60,62 @@ def test_history_rejects_bad_period(client: TestClient) -> None:
     assert client.get("/history/AAPL", params={"interval": "2h"}).status_code == 422
 
 
-def test_indicators(client: TestClient) -> None:
+def test_indicators_defaults(client: TestClient) -> None:
     r = client.get("/indicators/AAPL")
     assert r.status_code == 200
     body = r.json()
     n = len(body["candles"])
     assert n == 30
-    assert set(body["ema"]) == {"10", "30", "60", "90"}
-    assert all(len(series) == n for series in body["ema"].values())
-    assert body["ema"]["10"][0] == body["candles"][0]["close"]
-    bands = body["bollinger"]
-    assert bands["window"] == 20
+    assert list(body["series"]) == ["ema:10", "ema:30", "ema:60", "ema:90", "bb:20-2", "sr"]
+    ema10 = body["series"]["ema:10"]
+    assert ema10 == {
+        "id": "ema",
+        "kind": "overlay",
+        "params": {"span": 10.0},
+        "outputs": {"ema": ema10["outputs"]["ema"]},
+    }
+    assert len(ema10["outputs"]["ema"]) == n
+    assert ema10["outputs"]["ema"][0] == body["candles"][0]["close"]
+    bands = body["series"]["bb:20-2"]["outputs"]
     assert bands["middle"][:19] == [None] * 19
     assert bands["upper"][-1] > bands["middle"][-1] > bands["lower"][-1]
+    assert body["series"]["sr"]["outputs"] == {}
     assert isinstance(body["levels"], list)
     for lv in body["levels"]:
         assert lv["kind"] in {"support", "resistance"}
         assert lv["touches"] >= 1
+
+
+def test_indicators_requested_tokens(client: TestClient) -> None:
+    r = client.get("/indicators/AAPL", params={"ind": "rsi,macd:5-20,RSI:14,sma:50"})
+    assert r.status_code == 200
+    body = r.json()
+    assert list(body["series"]) == ["rsi:14", "macd:5-20-9", "sma:50"]
+    rsi = body["series"]["rsi:14"]
+    assert rsi["kind"] == "pane" and rsi["params"] == {"period": 14.0}
+    assert len(rsi["outputs"]["rsi"]) == len(body["candles"])
+    assert set(body["series"]["macd:5-20-9"]["outputs"]) == {"macd", "signal", "hist"}
+    assert body["levels"] == []  # sr not requested
+
+
+def test_indicators_catalog(client: TestClient) -> None:
+    r = client.get("/indicators/catalog")
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body["indicators"]) == 20
+    assert body["defaults"] == ["ema:10", "ema:30", "ema:60", "ema:90", "bb:20-2", "sr"]
+    assert body["max_per_request"] == 8
+    rsi = next(i for i in body["indicators"] if i["id"] == "rsi")
+    assert rsi["params"][0]["name"] == "period" and rsi["reference_lines"] == [30, 70]
+
+
+@pytest.mark.parametrize(
+    "ind", ["nope", "rsi:1", "macd:20-5", ",".join(f"sma:{n}" for n in range(2, 11))]
+)
+def test_indicators_bad_tokens_are_422(client: TestClient, ind: str) -> None:
+    r = client.get("/indicators/AAPL", params={"ind": ind})
+    assert r.status_code == 422
+    assert "detail" in r.json()
 
 
 def test_indicators_unknown_ticker(client: TestClient) -> None:

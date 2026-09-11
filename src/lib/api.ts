@@ -92,15 +92,20 @@ export type History = z.infer<typeof historySchema>
 
 const series = z.array(nullableNumber)
 
+export const indicatorKindSchema = z.enum(['overlay', 'pane'])
+export type IndicatorKind = z.infer<typeof indicatorKindSchema>
+
+export const indicatorSeriesSchema = z.object({
+  id: z.string(),
+  kind: indicatorKindSchema,
+  params: z.record(z.string(), z.number()),
+  outputs: z.record(z.string(), series),
+})
+export type IndicatorSeries = z.infer<typeof indicatorSeriesSchema>
+
 export const indicatorsSchema = historySchema.extend({
-  ema: z.record(z.string(), series),
-  bollinger: z.object({
-    window: z.number(),
-    k: z.number(),
-    middle: series,
-    upper: series,
-    lower: series,
-  }),
+  /** Keyed by canonical request token (`rsi:14`, `bb:20-2`), in request order. */
+  series: z.record(z.string(), indicatorSeriesSchema),
   levels: z.array(
     z.object({
       price: z.number(),
@@ -110,6 +115,31 @@ export const indicatorsSchema = historySchema.extend({
   ),
 })
 export type Indicators = z.infer<typeof indicatorsSchema>
+
+export const indicatorParamSchema = z.object({
+  name: z.string(),
+  default: z.number(),
+  min: z.number(),
+  max: z.number(),
+  integer: z.boolean(),
+})
+export const indicatorSpecSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  kind: indicatorKindSchema,
+  outputs: z.array(z.string()),
+  params: z.array(indicatorParamSchema),
+  reference_lines: z.array(z.number()),
+  description: z.string(),
+  formula: z.string(),
+})
+export type IndicatorSpec = z.infer<typeof indicatorSpecSchema>
+export const indicatorCatalogSchema = z.object({
+  indicators: z.array(indicatorSpecSchema),
+  defaults: z.array(z.string()),
+  max_per_request: z.number().int(),
+})
+export type IndicatorCatalog = z.infer<typeof indicatorCatalogSchema>
 export type Level = Indicators['levels'][number]
 
 export const recommendationsSchema = z.object({
@@ -355,8 +385,14 @@ export const api = {
     apiFetch(`/quotes`, quoteBatchSchema, { tickers: symbols.map(normaliseSymbol).join(',') }, init),
   history: (symbol: string, period: Period = '1y', interval: Interval = '1d', init?: RequestInit) =>
     apiFetch(`/history/${encodeURIComponent(normaliseSymbol(symbol))}`, historySchema, { period, interval }, init),
-  indicators: (symbol: string, period: Period = '1y', interval: Interval = '1d', init?: RequestInit) =>
-    apiFetch(`/indicators/${encodeURIComponent(normaliseSymbol(symbol))}`, indicatorsSchema, { period, interval }, init),
+  indicators: (symbol: string, period: Period = '1y', interval: Interval = '1d', tokens?: readonly string[], init?: RequestInit) =>
+    apiFetch(
+      `/indicators/${encodeURIComponent(normaliseSymbol(symbol))}`,
+      indicatorsSchema,
+      { period, interval, ind: tokens?.length ? tokens.join(',') : undefined },
+      init,
+    ),
+  indicatorCatalog: (init?: RequestInit) => apiFetch(`/indicators/catalog`, indicatorCatalogSchema, undefined, init),
   recommendations: (symbol: string, init?: RequestInit) =>
     apiFetch(`/recommendations/${encodeURIComponent(normaliseSymbol(symbol))}`, recommendationsSchema, undefined, init),
   cryptoTop: (limit = 25, init?: RequestInit) => apiFetch(`/crypto/top`, cryptoTopSchema, { limit }, init),

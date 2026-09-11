@@ -1,0 +1,489 @@
+{
+  "indicators": [
+    {
+      "id": "sma",
+      "name": "Simple moving average",
+      "kind": "overlay",
+      "outputs": [
+        "sma"
+      ],
+      "params": [
+        {
+          "name": "window",
+          "default": 20.0,
+          "min": 2.0,
+          "max": 500.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [],
+      "description": "Average close over the last N bars.",
+      "formula": "SMA = mean(close, N)"
+    },
+    {
+      "id": "ema",
+      "name": "Exponential moving average",
+      "kind": "overlay",
+      "outputs": [
+        "ema"
+      ],
+      "params": [
+        {
+          "name": "span",
+          "default": 20.0,
+          "min": 1.0,
+          "max": 500.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [],
+      "description": "Moving average that weights recent closes more, α = 2/(N+1).",
+      "formula": "EMA_t = α·close_t + (1−α)·EMA_{t−1}"
+    },
+    {
+      "id": "bb",
+      "name": "Bollinger Bands",
+      "kind": "overlay",
+      "outputs": [
+        "middle",
+        "upper",
+        "lower"
+      ],
+      "params": [
+        {
+          "name": "window",
+          "default": 20.0,
+          "min": 2.0,
+          "max": 500.0,
+          "integer": true
+        },
+        {
+          "name": "k",
+          "default": 2.0,
+          "min": 0.5,
+          "max": 5.0,
+          "integer": false
+        }
+      ],
+      "reference_lines": [],
+      "description": "SMA with bands k standard deviations above and below.",
+      "formula": "middle = SMA(N); upper/lower = middle ± k·σ(close, N)"
+    },
+    {
+      "id": "vwap",
+      "name": "VWAP",
+      "kind": "overlay",
+      "outputs": [
+        "vwap"
+      ],
+      "params": [],
+      "reference_lines": [],
+      "description": "Volume-weighted average of the typical price; resets each session on intraday bars, otherwise accumulates from the first bar shown.",
+      "formula": "VWAP = Σ(typical·volume) / Σ(volume), typical = (H+L+C)/3"
+    },
+    {
+      "id": "psar",
+      "name": "Parabolic SAR",
+      "kind": "overlay",
+      "outputs": [
+        "sar"
+      ],
+      "params": [
+        {
+          "name": "step",
+          "default": 0.02,
+          "min": 0.001,
+          "max": 0.2,
+          "integer": false
+        },
+        {
+          "name": "max",
+          "default": 0.2,
+          "min": 0.05,
+          "max": 1.0,
+          "integer": false
+        }
+      ],
+      "reference_lines": [],
+      "description": "Trailing stop that accelerates toward price while the trend holds and flips on a break.",
+      "formula": "SAR_{t+1} = SAR_t + AF·(EP − SAR_t), AF from step up to max"
+    },
+    {
+      "id": "ichimoku",
+      "name": "Ichimoku Cloud",
+      "kind": "overlay",
+      "outputs": [
+        "tenkan",
+        "kijun",
+        "senkou_a",
+        "senkou_b",
+        "chikou"
+      ],
+      "params": [
+        {
+          "name": "tenkan",
+          "default": 9.0,
+          "min": 2.0,
+          "max": 100.0,
+          "integer": true
+        },
+        {
+          "name": "kijun",
+          "default": 26.0,
+          "min": 2.0,
+          "max": 200.0,
+          "integer": true
+        },
+        {
+          "name": "senkou",
+          "default": 52.0,
+          "min": 2.0,
+          "max": 400.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [],
+      "description": "Conversion and base lines, a cloud projected ahead, and a lagging close.",
+      "formula": "tenkan = mid(9), kijun = mid(26), senkou A = mean(tenkan, kijun) → +26, senkou B = mid(52) → +26, chikou = close → −26"
+    },
+    {
+      "id": "keltner",
+      "name": "Keltner Channels",
+      "kind": "overlay",
+      "outputs": [
+        "middle",
+        "upper",
+        "lower"
+      ],
+      "params": [
+        {
+          "name": "span",
+          "default": 20.0,
+          "min": 2.0,
+          "max": 500.0,
+          "integer": true
+        },
+        {
+          "name": "atr",
+          "default": 10.0,
+          "min": 2.0,
+          "max": 200.0,
+          "integer": true
+        },
+        {
+          "name": "mult",
+          "default": 2.0,
+          "min": 0.5,
+          "max": 5.0,
+          "integer": false
+        }
+      ],
+      "reference_lines": [],
+      "description": "EMA with bands a multiple of the average true range away.",
+      "formula": "middle = EMA(N); upper/lower = middle ± m·ATR(P)"
+    },
+    {
+      "id": "donchian",
+      "name": "Donchian Channels",
+      "kind": "overlay",
+      "outputs": [
+        "upper",
+        "middle",
+        "lower"
+      ],
+      "params": [
+        {
+          "name": "window",
+          "default": 20.0,
+          "min": 2.0,
+          "max": 500.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [],
+      "description": "Highest high and lowest low of the last N bars.",
+      "formula": "upper = max(high, N); lower = min(low, N); middle = mean(upper, lower)"
+    },
+    {
+      "id": "sr",
+      "name": "Support / resistance",
+      "kind": "overlay",
+      "outputs": [],
+      "params": [],
+      "reference_lines": [],
+      "description": "Price levels where local highs and lows cluster, weighted by how often they were touched.",
+      "formula": "local extrema (±5 bars) clustered within 1% of price"
+    },
+    {
+      "id": "pivot",
+      "name": "Pivot points",
+      "kind": "overlay",
+      "outputs": [
+        "pp",
+        "r1",
+        "s1",
+        "r2",
+        "s2"
+      ],
+      "params": [],
+      "reference_lines": [],
+      "description": "Classic floor-trader pivot and two support/resistance levels from the previous bar.",
+      "formula": "PP = (H+L+C)/3; R1 = 2PP − L; S1 = 2PP − H; R2 = PP + (H−L); S2 = PP − (H−L)"
+    },
+    {
+      "id": "rsi",
+      "name": "RSI",
+      "kind": "pane",
+      "outputs": [
+        "rsi"
+      ],
+      "params": [
+        {
+          "name": "period",
+          "default": 14.0,
+          "min": 2.0,
+          "max": 200.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [
+        30.0,
+        70.0
+      ],
+      "description": "Relative strength index: momentum on a 0–100 scale; 70+ is often read as overbought, 30− as oversold.",
+      "formula": "RSI = 100 − 100 / (1 + avg gain / avg loss), Wilder-smoothed over N"
+    },
+    {
+      "id": "macd",
+      "name": "MACD",
+      "kind": "pane",
+      "outputs": [
+        "macd",
+        "signal",
+        "hist"
+      ],
+      "params": [
+        {
+          "name": "fast",
+          "default": 12.0,
+          "min": 2.0,
+          "max": 200.0,
+          "integer": true
+        },
+        {
+          "name": "slow",
+          "default": 26.0,
+          "min": 3.0,
+          "max": 400.0,
+          "integer": true
+        },
+        {
+          "name": "signal",
+          "default": 9.0,
+          "min": 2.0,
+          "max": 100.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [
+        0.0
+      ],
+      "description": "Difference of two EMAs with a signal line and histogram.",
+      "formula": "MACD = EMA(fast) − EMA(slow); signal = EMA(MACD, S); hist = MACD − signal"
+    },
+    {
+      "id": "stoch",
+      "name": "Stochastic",
+      "kind": "pane",
+      "outputs": [
+        "k",
+        "d"
+      ],
+      "params": [
+        {
+          "name": "k",
+          "default": 14.0,
+          "min": 2.0,
+          "max": 200.0,
+          "integer": true
+        },
+        {
+          "name": "d",
+          "default": 3.0,
+          "min": 1.0,
+          "max": 50.0,
+          "integer": true
+        },
+        {
+          "name": "smooth",
+          "default": 3.0,
+          "min": 1.0,
+          "max": 50.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [
+        20.0,
+        80.0
+      ],
+      "description": "Where the close sits in the recent high–low range, smoothed (slow stochastic).",
+      "formula": "%K = SMA(100·(C − L_N)/(H_N − L_N), smooth); %D = SMA(%K, D)"
+    },
+    {
+      "id": "adx",
+      "name": "ADX",
+      "kind": "pane",
+      "outputs": [
+        "adx",
+        "plus_di",
+        "minus_di"
+      ],
+      "params": [
+        {
+          "name": "period",
+          "default": 14.0,
+          "min": 2.0,
+          "max": 200.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [
+        25.0
+      ],
+      "description": "Trend strength (ADX) with directional lines (+DI, −DI).",
+      "formula": "±DI = 100·Wilder(±DM)/ATR; DX = 100·|+DI − −DI|/(+DI + −DI); ADX = Wilder(DX)"
+    },
+    {
+      "id": "atr",
+      "name": "ATR",
+      "kind": "pane",
+      "outputs": [
+        "atr"
+      ],
+      "params": [
+        {
+          "name": "period",
+          "default": 14.0,
+          "min": 2.0,
+          "max": 200.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [],
+      "description": "Average true range: typical bar-to-bar movement in price units.",
+      "formula": "TR = max(H−L, |H−C_prev|, |L−C_prev|); ATR = Wilder(TR, N)"
+    },
+    {
+      "id": "cci",
+      "name": "CCI",
+      "kind": "pane",
+      "outputs": [
+        "cci"
+      ],
+      "params": [
+        {
+          "name": "window",
+          "default": 20.0,
+          "min": 2.0,
+          "max": 200.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [
+        -100.0,
+        100.0
+      ],
+      "description": "Commodity channel index: distance of the typical price from its average, scaled.",
+      "formula": "CCI = (typical − SMA(typical, N)) / (0.015 · mean deviation)"
+    },
+    {
+      "id": "obv",
+      "name": "On-balance volume",
+      "kind": "pane",
+      "outputs": [
+        "obv"
+      ],
+      "params": [],
+      "reference_lines": [],
+      "description": "Running total of volume, added on up closes and subtracted on down closes.",
+      "formula": "OBV_t = OBV_{t−1} ± volume_t by sign(close_t − close_{t−1})"
+    },
+    {
+      "id": "willr",
+      "name": "Williams %R",
+      "kind": "pane",
+      "outputs": [
+        "willr"
+      ],
+      "params": [
+        {
+          "name": "period",
+          "default": 14.0,
+          "min": 2.0,
+          "max": 200.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [
+        -80.0,
+        -20.0
+      ],
+      "description": "Where the close sits in the recent range, on a −100–0 scale.",
+      "formula": "%R = −100 · (H_N − C) / (H_N − L_N)"
+    },
+    {
+      "id": "mfi",
+      "name": "Money flow index",
+      "kind": "pane",
+      "outputs": [
+        "mfi"
+      ],
+      "params": [
+        {
+          "name": "period",
+          "default": 14.0,
+          "min": 2.0,
+          "max": 200.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [
+        20.0,
+        80.0
+      ],
+      "description": "Volume-weighted RSI on a 0–100 scale.",
+      "formula": "MFI = 100 − 100 / (1 + Σ positive flow / Σ negative flow), flow = typical·volume"
+    },
+    {
+      "id": "roc",
+      "name": "Rate of change",
+      "kind": "pane",
+      "outputs": [
+        "roc"
+      ],
+      "params": [
+        {
+          "name": "period",
+          "default": 12.0,
+          "min": 1.0,
+          "max": 500.0,
+          "integer": true
+        }
+      ],
+      "reference_lines": [
+        0.0
+      ],
+      "description": "Percent change of the close over N bars.",
+      "formula": "ROC = 100 · (C − C_{t−N}) / C_{t−N}"
+    }
+  ],
+  "defaults": [
+    "ema:10",
+    "ema:30",
+    "ema:60",
+    "ema:90",
+    "bb:20-2",
+    "sr"
+  ],
+  "max_per_request": 8
+}

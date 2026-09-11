@@ -42,7 +42,7 @@ def test_indicators_live(live: TestClient) -> None:
     r = live.get("/indicators/AAPL", params={"period": "6mo"})
     assert r.status_code == 200
     body = r.json()
-    assert body["ema"]["90"][-1] is not None
+    assert body["series"]["ema:90"]["outputs"]["ema"][-1] is not None
     assert body["levels"]
 
 

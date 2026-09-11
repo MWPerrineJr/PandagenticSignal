@@ -1,4 +1,5 @@
 import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query'
+import { DEFAULT_TOKENS } from './indicators'
 import { ApiError, api, normaliseSymbol, type Interval, type Period, type PortfolioRequest, type RetirementRequest, type SimulateRequest } from './api'
 
 const MINUTE = 60_000
@@ -10,8 +11,9 @@ export const queryKeys = {
   quotes: (symbols: string[]) => ['quotes', symbols.map(normaliseSymbol).sort().join(',')] as const,
   history: (symbol: string, period: Period, interval: Interval) =>
     ['history', normaliseSymbol(symbol), period, interval] as const,
-  indicators: (symbol: string, period: Period, interval: Interval) =>
-    ['indicators', normaliseSymbol(symbol), period, interval] as const,
+  indicators: (symbol: string, period: Period, interval: Interval, tokens: readonly string[]) =>
+    ['indicators', normaliseSymbol(symbol), period, interval, tokens.join(',')] as const,
+  indicatorCatalog: () => ['indicators', 'catalog'] as const,
   recommendations: (symbol: string) => ['recommendations', normaliseSymbol(symbol)] as const,
   cryptoTop: (limit: number) => ['crypto', 'top', limit] as const,
   portfolioStats: (req: PortfolioRequest) => ['portfolio', 'stats', JSON.stringify(req)] as const,
@@ -73,13 +75,27 @@ export function useHistory(symbol: string | null | undefined, period: Period = '
   })
 }
 
-export function useIndicators(symbol: string | null | undefined, period: Period = '1y', interval: Interval = '1d') {
+export function useIndicators(
+  symbol: string | null | undefined,
+  period: Period = '1y',
+  interval: Interval = '1d',
+  tokens: readonly string[] = DEFAULT_TOKENS,
+) {
   return useQuery({
-    queryKey: queryKeys.indicators(symbol ?? '', period, interval),
-    queryFn: ({ signal }) => api.indicators(symbol!, period, interval, { signal }),
+    queryKey: queryKeys.indicators(symbol ?? '', period, interval, tokens),
+    queryFn: ({ signal }) => api.indicators(symbol!, period, interval, tokens, { signal }),
     enabled: Boolean(symbol),
     staleTime: 5 * MINUTE,
     placeholderData: keepPreviousData,
+  })
+}
+
+/** The indicator registry; answered once per session. */
+export function useIndicatorCatalog() {
+  return useQuery({
+    queryKey: queryKeys.indicatorCatalog(),
+    queryFn: ({ signal }) => api.indicatorCatalog({ signal }),
+    staleTime: Infinity,
   })
 }
 
