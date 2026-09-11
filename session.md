@@ -237,7 +237,7 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] API registry of 20 + catalog route + `ind=` tokens + 422s; export script + fixture staleness test; 61 indicator tests
 - [x] Frontend: token model, selection saved to account (Supabase `indicator_settings`, migration applied) or browser, picker, multi-pane chart with band fills, widget + Crypto integration; 203 tests
 - [x] e2e chart + crypto steps updated, 3/3 locally
-- [ ] Checkpoint: commit + push, CI (fill in the hash)
+- [x] Checkpoint: committed + pushed as `d40c832`, CI green; Supabase advisors unchanged (only the pre-existing leaked-password warning)
 - [ ] Deploy (**needs the user**): Render Manual Deploy latest (no new env), Lovable Publish → Update; then Playwright 7/7 against pandagenticsignal.com. **Note:** the `/indicators` response shape changed, so deploy the API and publish the site in one go (the new site errors against the old API).
 
 ### Phase 11 — AI news-sentiment agent
