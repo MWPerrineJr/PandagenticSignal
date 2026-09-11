@@ -212,7 +212,7 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] Frontend: Crypto tab (`src/features/crypto/`), `crypto` widget, search badge, quote-card labels, `formatPrice`/`formatPct`
 - [x] Tests: `crypto-page.test.tsx` (6), `crypto-widget.test.tsx` (3), `format.test.ts`, api client tests; e2e "crypto tab" test
 - [x] Checkpoint part 1: committed + pushed as `f142edf`, CI green, crypto e2e test 1/1 locally against the dev servers; Coinbase/CoinGecko switch committed after that (see git log)
-- [ ] Checkpoint part 2 (**needs the user**): Render did not auto-deploy within 15 min (still serving 0.2.0 without `/crypto/top`) → Manual Deploy → "Deploy latest commit"; then Lovable → Publish → Update so pandagenticsignal.com gets the Crypto tab; then verify `curl https://stock-tool-api-qg9s.onrender.com/crypto/top?limit=3` and `E2E_BASE_URL=https://pandagenticsignal.com npx playwright test` (expect 5/5 once Phase 9 is deployed too)
+- [x] Checkpoint part 2: user ran Render Manual Deploy + Lovable Publish (2026-09-11); `/crypto/top` live on Render, Playwright 6/6 against pandagenticsignal.com
 
 ### Phase 9 — Portfolio builder + Monte Carlo
 - [x] Engine `services/portfolio.py` + 16 unit tests; `MarketData.closes()`
@@ -220,7 +220,7 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] Frontend: model, client, queries, store/repo/hook (local + cloud), Portfolio tab, widget; 35 new tests
 - [x] Supabase `portfolios` table applied to stock-tool-dev (MCP) + migration file + pgTAP file
 - [x] e2e "portfolio tab" test, 2/2 locally with the crypto test
-- [ ] Deploy (**needs the user**): Render Manual Deploy **and** blueprint Manual sync + Approve for the new `STOCK_API_SIMULATE_RATE_LIMIT` key; Lovable Publish → Update; then `curl -X POST .../portfolio/analyse` from the site passes CORS and Playwright 6/6 against pandagenticsignal.com (covers Phases 8–10)
+- [x] Deployed 2026-09-11: `POST /portfolio/analyse` returns 200 with `access-control-allow-origin: https://pandagenticsignal.com`; `/portfolio/simulate` shows `x-ratelimit-limit: 30` (blueprint sync worked); Playwright 6/6 against pandagenticsignal.com
 
 ### Phase 10 — Retirement
 - [x] Engine `services/retirement.py` + 8 unit tests; `arithmetic_from_log`
@@ -228,7 +228,7 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] Frontend: TS twin + parity fixture, store, Retirement tab (form, nest-egg chart, success card, fan chart by age), nav; 7 new tests
 - [x] e2e "retirement tab" test, 2/2 locally with the portfolio test
 - [x] Checkpoint: committed + pushed as `37cde46`, CI green (Phase 9 was `61d38a5`, Coinbase switch `e8117e1`, Phase 8 `f142edf`)
-- [ ] Deploy: same user steps as Phase 9 (no new env); verify `curl -X POST .../retirement/project` on Render
+- [x] Deployed 2026-09-11: `POST /retirement/project` live on Render; retirement e2e passes against pandagenticsignal.com. **Phase 10 closed.**
 
 ## Notes for later phases
 
@@ -256,14 +256,14 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 
 **Where things stand (2026-09-11):** Phases 0–7 closed and live. Phases 8 (Crypto, notes 37–38),
 9 (Portfolio + Monte Carlo, note 39) and 10 (Retirement, note 40) are built, tested, committed and pushed
-to `main` with CI green on every commit (latest `37cde46`), but **not yet deployed**: Render still serves
-the pre-Phase-8 API and pandagenticsignal.com has not been republished (user steps below).
+to `main` with CI green on every commit (latest `37cde46`) and **deployed 2026-09-11** (Render + Lovable);
+Playwright 6/6 against https://pandagenticsignal.com. Phases 8–10 closed.
 **Next: Phase 11 (AI news-sentiment agent)** from the "Expansion plan" section at the bottom of this file.
 It needs the Anthropic key on Render (`render.yaml` key with `sync: false` → the user pastes the value, then
 blueprint Manual sync + Approve) and the `claude-api` skill for current model ids. The per-prefix limiter
 already exists (`RateLimiter(overrides=...)` in `api/app/ratelimit.py`). Pull first (`git pull`).
 **Before anything else on this Mac:** `find . -type f -flags +dataless | wc -l` must be 0 (note 36).
-**Pending from the user:** Render Manual Deploy of the latest commit **plus** blueprint Manual sync + Approve (new env key `STOCK_API_SIMULATE_RATE_LIMIT`), and Lovable Publish → Update (Phase 8/9 checklists).
+**Pending from the user for Phase 11:** an Anthropic API key to paste into Render (paid usage; roughly 3–5 ¢ per analysis, cached an hour).
 
 **Live pieces:**
 - Site: https://pandagenticsignal.com (Lovable-published, custom domain; www redirects). Lovable project
