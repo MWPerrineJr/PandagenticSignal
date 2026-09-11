@@ -204,7 +204,8 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] API: `/crypto/top`, crypto in search, `Quote.quote_type`, `crypto_ttl`; fakes + 6 new tests
 - [x] Frontend: Crypto tab (`src/features/crypto/`), `crypto` widget, search badge, quote-card labels, `formatPrice`/`formatPct`
 - [x] Tests: `crypto-page.test.tsx` (6), `crypto-widget.test.tsx` (3), `format.test.ts`, api client tests; e2e "crypto tab" test
-- [ ] Checkpoint: commit + push, Render deploy verified (`/crypto/top?limit=3`, `/search?q=bitcoin`), Playwright 4/4 against pandagenticsignal.com
+- [x] Checkpoint part 1: committed + pushed as `f142edf`, CI green, crypto e2e test 1/1 locally against the dev servers
+- [ ] Checkpoint part 2 (**needs the user**): Render did not auto-deploy within 15 min (still serving 0.2.0 without `/crypto/top`) → Manual Deploy → "Deploy latest commit"; then Lovable → Publish → Update so pandagenticsignal.com gets the Crypto tab; then verify `curl https://stock-tool-api-qg9s.onrender.com/crypto/top?limit=3` and `E2E_BASE_URL=https://pandagenticsignal.com npx playwright test` (expect 4/4)
 
 ## Notes for later phases
 
@@ -235,6 +236,7 @@ locally (see note 37 and the Phase 8 checklist for the deploy checkpoint status)
 **Next: Phase 9 (Portfolio builder + Monte Carlo)** from the "Expansion plan" section at the bottom of
 this file. Pull first (`git pull`), then follow the phase's engine → API → frontend → tests → checkpoint order.
 **Before anything else on this Mac:** `find . -type f -flags +dataless | wc -l` must be 0 (note 36).
+**Two clicks pending from the user before Phase 9's checkpoint:** Render Manual Deploy of `f142edf`, and Lovable Publish → Update (Phase 8 checklist, part 2).
 
 **Live pieces:**
 - Site: https://pandagenticsignal.com (Lovable-published, custom domain; www redirects). Lovable project
