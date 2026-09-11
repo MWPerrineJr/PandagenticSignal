@@ -104,6 +104,20 @@ test.describe('smoke (live data, signed out)', () => {
     await expect(page.getByTestId('holding-BTC-USD')).toBeVisible()
   })
 
+  test('retirement tab: sliders project instantly, Monte Carlo reports a probability', async ({ page }) => {
+    await page.goto('/retirement')
+    await expect(page.getByRole('heading', { level: 1, name: 'Retirement' })).toBeVisible()
+    await expect(page.getByRole('figure', { name: /projected nest egg by age/i })).toBeVisible()
+    const age = page.getByRole('spinbutton', { name: 'Retirement age (number)' })
+    await age.fill('62')
+    await expect(page.getByText('retire at 62')).toBeVisible()
+    await expect(page.getByTestId('deterministic-summary')).toContainText('Nest egg at 62')
+
+    await page.getByRole('button', { name: /run monte carlo/i }).click()
+    await expect(page.getByTestId('success-probability')).toHaveText(/^\d{1,3}%$/, { timeout: 60_000 })
+    await expect(page.getByRole('figure', { name: /balance in today’s dollars/i })).toBeVisible()
+  })
+
   test('unknown symbol shows a friendly error, not a crash', async ({ page }) => {
     await page.goto('/?t=ZZZZNOTREAL')
     await expect(page.getByRole('alert').filter({ hasText: /no data for ZZZZNOTREAL/i })).toBeVisible()

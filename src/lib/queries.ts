@@ -1,5 +1,5 @@
 import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query'
-import { ApiError, api, normaliseSymbol, type Interval, type Period, type PortfolioRequest, type SimulateRequest } from './api'
+import { ApiError, api, normaliseSymbol, type Interval, type Period, type PortfolioRequest, type RetirementRequest, type SimulateRequest } from './api'
 
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
@@ -16,6 +16,7 @@ export const queryKeys = {
   cryptoTop: (limit: number) => ['crypto', 'top', limit] as const,
   portfolioStats: (req: PortfolioRequest) => ['portfolio', 'stats', JSON.stringify(req)] as const,
   simulation: (req: SimulateRequest) => ['portfolio', 'simulate', JSON.stringify(req)] as const,
+  retirement: (req: RetirementRequest | null) => ['retirement', req ? JSON.stringify(req) : ''] as const,
 }
 
 /** Never retry a client error (404 unknown symbol, 422 bad request, 429 rate limited). */
@@ -111,6 +112,16 @@ export function useSimulation(req: SimulateRequest | null) {
     queryKey: queryKeys.simulation(req ?? { holdings: [], period: '2y', horizon_years: 0, n_sims: 0, initial_value: 0, monthly_contribution: 0 }),
     queryFn: ({ signal }) => api.portfolioSimulate(req!, { signal }),
     enabled: Boolean(req && req.holdings.length > 0),
+    staleTime: 10 * MINUTE,
+  })
+}
+
+/** Runs only once a request is handed in (the page waits for "Run Monte Carlo"). */
+export function useRetirementProjection(req: RetirementRequest | null) {
+  return useQuery({
+    queryKey: queryKeys.retirement(req),
+    queryFn: ({ signal }) => api.retirementProject(req!, { signal }),
+    enabled: Boolean(req),
     staleTime: 10 * MINUTE,
   })
 }

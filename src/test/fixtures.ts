@@ -1,4 +1,5 @@
-import type { CryptoTop, Indicators, PortfolioStats, Quote, Recommendations, SearchResult, Simulation } from '@/lib/api'
+import type { CryptoTop, Indicators, PortfolioStats, Quote, Recommendations, RetirementOut, RetirementRequest, SearchResult, Simulation } from '@/lib/api'
+import { projectDeterministic } from '@/lib/retirement'
 
 export const searchFixtures: Record<string, SearchResult[]> = {
   apple: [
@@ -178,5 +179,27 @@ export function makeSimulation(stats: PortfolioStats, req: { horizon_years: numb
       cvar_95: Math.max(0, baseline - p5) * 1.2,
     },
     stats,
+  }
+}
+
+/** Deterministic path from the TS twin plus synthetic bands: p50 = real path, spread by sigma. */
+export function makeRetirement(req: RetirementRequest, assumptions?: Partial<RetirementOut['assumptions']>): RetirementOut {
+  const a = { mu: req.expected_return, sigma: req.volatility, source: 'parametric' as const, symbols: [] as string[], ...assumptions }
+  const points = projectDeterministic({ ...req, volatility: req.volatility, expected_return: a.mu })
+  const real = points.map((p) => p.balance_real)
+  const band = (k: number) => real.map((v, i) => Math.max(0, v * (1 + k * a.sigma * Math.sqrt(i))))
+  const bands = { p5: band(-1.6), p25: band(-0.7), p50: real, p75: band(0.7), p95: band(1.6) }
+  const last = real.at(-1) ?? 0
+  return {
+    assumptions: a,
+    deterministic: points,
+    monte_carlo: {
+      success_probability: last > 0 ? 0.82 : 0.1,
+      ages: points.map((p) => p.age),
+      bands,
+      median_depletion_age: last > 0 ? null : req.retirement_age + 12,
+      terminal: { mean: last, median: last, p5: bands.p5.at(-1)!, p25: bands.p25.at(-1)!, p75: bands.p75.at(-1)!, p95: bands.p95.at(-1)!, prob_loss: 0.2, var_95: 0, var_95_pct: 0, cvar_95: 0 },
+      n_sims: req.n_sims,
+    },
   }
 }

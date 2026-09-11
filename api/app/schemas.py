@@ -140,6 +140,64 @@ class SimulationOut(BaseModel):
     stats: PortfolioStatsOut
 
 
+class RetirementRequest(BaseModel):
+    current_age: int = Field(ge=0, le=110)
+    retirement_age: int = Field(ge=1, le=110)
+    life_expectancy: int = Field(ge=2, le=110)
+    current_savings: float = Field(ge=0)
+    monthly_contribution: float = Field(ge=0)
+    expected_return: float = Field(default=0.06, ge=-0.5, le=0.5)
+    inflation: float = Field(default=0.025, ge=-0.5, le=0.5)
+    annual_spending: float = Field(ge=0, description="In today's dollars")
+    # "parametric": expected_return + volatility. "portfolio": moments from `holdings` history.
+    mode: Literal["parametric", "portfolio"] = "parametric"
+    volatility: float = Field(default=0.12, ge=0, le=1)
+    holdings: list[Holding] | None = Field(default=None, max_length=MAX_HOLDINGS)
+    period: Literal["1y", "2y", "5y"] = "2y"
+    n_sims: int = Field(default=2000, ge=100, le=10_000)
+    seed: int | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def _ages_and_mode(self) -> RetirementRequest:
+        if not self.current_age < self.retirement_age < self.life_expectancy:
+            raise ValueError("ages must satisfy current_age < retirement_age < life_expectancy")
+        if self.mode == "portfolio":
+            if not self.holdings:
+                raise ValueError("portfolio mode needs holdings")
+            PortfolioRequest(holdings=self.holdings, period=self.period)  # same rules
+        return self
+
+
+class YearPointOut(BaseModel):
+    age: int
+    year: int
+    balance_nominal: float
+    balance_real: float
+    cashflow: float
+
+
+class RetirementAssumptions(BaseModel):
+    mu: float = Field(description="Expected annual growth used for the projection")
+    sigma: float
+    source: Literal["parametric", "portfolio"]
+    symbols: list[str] = Field(default_factory=list)
+
+
+class RetirementMonteCarlo(BaseModel):
+    success_probability: float
+    ages: list[int]
+    bands: dict[str, list[float]] = Field(description="Real (today's dollars) percentiles by age")
+    median_depletion_age: int | None
+    terminal: dict[str, float]
+    n_sims: int
+
+
+class RetirementOut(BaseModel):
+    assumptions: RetirementAssumptions
+    deterministic: list[YearPointOut]
+    monte_carlo: RetirementMonteCarlo
+
+
 class Candle(BaseModel):
     time: int = Field(description="Unix epoch seconds (UTC)")
     open: float

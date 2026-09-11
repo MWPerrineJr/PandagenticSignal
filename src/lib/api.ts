@@ -194,6 +194,49 @@ export const simulationSchema = z.object({
 })
 export type Simulation = z.infer<typeof simulationSchema>
 
+export interface RetirementRequest {
+  current_age: number
+  retirement_age: number
+  life_expectancy: number
+  current_savings: number
+  monthly_contribution: number
+  expected_return: number
+  inflation: number
+  annual_spending: number
+  mode: 'parametric' | 'portfolio'
+  volatility: number
+  holdings?: RequestHolding[]
+  period?: (typeof PORTFOLIO_REQUEST_PERIODS)[number]
+  n_sims: number
+  seed?: number
+}
+
+export const yearPointSchema = z.object({
+  age: z.number().int(),
+  year: z.number().int(),
+  balance_nominal: z.number(),
+  balance_real: z.number(),
+  cashflow: z.number(),
+})
+export const retirementOutSchema = z.object({
+  assumptions: z.object({
+    mu: z.number(),
+    sigma: z.number(),
+    source: z.enum(['parametric', 'portfolio']),
+    symbols: z.array(z.string()).default([]),
+  }),
+  deterministic: z.array(yearPointSchema),
+  monte_carlo: z.object({
+    success_probability: z.number(),
+    ages: z.array(z.number().int()),
+    bands: z.record(z.string(), z.array(z.number())),
+    median_depletion_age: z.number().int().nullable(),
+    terminal: z.record(z.string(), z.number()),
+    n_sims: z.number().int(),
+  }),
+})
+export type RetirementOut = z.infer<typeof retirementOutSchema>
+
 export class ApiError extends Error {
   readonly status: number
 
@@ -265,4 +308,5 @@ export const api = {
   cryptoTop: (limit = 25, init?: RequestInit) => apiFetch(`/crypto/top`, cryptoTopSchema, { limit }, init),
   portfolioAnalyse: (body: PortfolioRequest, init?: RequestInit) => postJson(`/portfolio/analyse`, portfolioStatsSchema, body, init),
   portfolioSimulate: (body: SimulateRequest, init?: RequestInit) => postJson(`/portfolio/simulate`, simulationSchema, body, init),
+  retirementProject: (body: RetirementRequest, init?: RequestInit) => postJson(`/retirement/project`, retirementOutSchema, body, init),
 }

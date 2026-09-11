@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
-import { cryptoTopFixture, makeIndicators, makePortfolioStats, makeSimulation, quoteFixtures, recommendationsFixture, searchFixtures } from './fixtures'
+import { cryptoTopFixture, makeIndicators, makePortfolioStats, makeRetirement, makeSimulation, quoteFixtures, recommendationsFixture, searchFixtures } from './fixtures'
+import type { RetirementRequest } from '@/lib/api'
 
 import { API_URL } from '@/lib/api'
 
@@ -87,6 +88,20 @@ export const handlers = [
         monthly_contribution: body.monthly_contribution ?? 0,
       }),
     )
+  }),
+
+  http.post(`${API_URL}/retirement/project`, async ({ request }) => {
+    const body = (await request.json()) as RetirementRequest
+    if (!(body.current_age < body.retirement_age && body.retirement_age < body.life_expectancy)) {
+      return HttpResponse.json({ detail: 'ages must satisfy current_age < retirement_age < life_expectancy' }, { status: 422 })
+    }
+    if (body.mode === 'portfolio') {
+      const bad = portfolioResponse({ holdings: body.holdings ?? [] })
+      if (bad) return bad
+      const [symbols] = portfolioInputs({ holdings: body.holdings ?? [] })
+      return HttpResponse.json(makeRetirement(body, { mu: 0.07, sigma: 0.18, source: 'portfolio', symbols }))
+    }
+    return HttpResponse.json(makeRetirement(body))
   }),
 
   http.get(`${API_URL}/recommendations/:symbol`, ({ params }) => {

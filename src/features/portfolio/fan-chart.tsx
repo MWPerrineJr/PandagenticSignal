@@ -12,7 +12,18 @@ const PAD = { top: 12, right: 16, bottom: 28, left: 56 }
  * Percentile fan of simulated wealth: 5–95 band, 25–75 band, median line. SVG rather than
  * lightweight-charts because bands need filled polygons and jsdom can assert on paths.
  */
-export function FanChart({ sim, title = 'Simulated wealth' }: { sim: Simulation; title?: string }) {
+export interface FanChartProps {
+  sim: Simulation
+  title?: string
+  /** Axis label for a time in years (default "Ny"); retirement passes ages. */
+  xLabel?: (t: number) => string
+  /** Caption suffix after the horizon, e.g. "2,000 paths". */
+  caption?: string
+  /** Label of the dashed reference line (default "Starting value"). */
+  baselineLabel?: string
+}
+
+export function FanChart({ sim, title = 'Simulated wealth', xLabel = (t) => `${t}y`, caption, baselineLabel = 'Starting value' }: FanChartProps) {
   const { theme } = useTheme()
   const palette = VIZ_PALETTES[theme]
   const accent = palette.categorical[0]!
@@ -46,7 +57,7 @@ export function FanChart({ sim, title = 'Simulated wealth' }: { sim: Simulation;
   return (
     <figure className="space-y-2" aria-labelledby="fan-caption">
       <figcaption id="fan-caption" className="text-sm font-medium">
-        {title} over {sim.horizon_years} {sim.horizon_years === 1 ? 'year' : 'years'} · {sim.n_sims.toLocaleString()} paths
+        {title} over {sim.horizon_years} {sim.horizon_years === 1 ? 'year' : 'years'} · {caption ?? `${sim.n_sims.toLocaleString()} paths`}
       </figcaption>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: median and 5th to 95th percentile bands`} className="h-auto w-full max-w-full" data-testid="fan-chart">
         {yTicks.map((v) => (
@@ -59,7 +70,7 @@ export function FanChart({ sim, title = 'Simulated wealth' }: { sim: Simulation;
         ))}
         {xTicks.map((t) => (
           <text key={t} x={x(t)} y={H - 8} textAnchor="middle" fontSize={10} fill={palette.muted}>
-            {t}y
+            {xLabel(t)}
           </text>
         ))}
         <polygon points={outer} fill={accent} fillOpacity={0.15} data-band="p5-p95" />
@@ -71,14 +82,14 @@ export function FanChart({ sim, title = 'Simulated wealth' }: { sim: Simulation;
         <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 rounded-sm" style={{ background: accent }} aria-hidden /> Median</span>
         <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 rounded-sm" style={{ background: accent, opacity: 0.3 }} aria-hidden /> 25th–75th percentile</span>
         <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 rounded-sm" style={{ background: accent, opacity: 0.15 }} aria-hidden /> 5th–95th percentile</span>
-        <span className="flex items-center gap-1.5"><span className="inline-block h-0 w-4 border-t border-dashed" style={{ borderColor: palette.muted }} aria-hidden /> Starting value</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-0 w-4 border-t border-dashed" style={{ borderColor: palette.muted }} aria-hidden /> {baselineLabel}</span>
       </div>
       <details className="text-xs">
         <summary className="cursor-pointer text-muted-foreground">Table view</summary>
         <table className="mt-2 w-full tabular-nums">
           <thead className="text-muted-foreground">
             <tr>
-              <th scope="col" className="py-1 text-left font-medium">Year</th>
+              <th scope="col" className="py-1 text-left font-medium">{xLabel === undefined ? 'Year' : 'Time'}</th>
               {['5th', '25th', 'Median', '75th', '95th'].map((h) => (
                 <th key={h} scope="col" className="py-1 text-right font-medium">{h}</th>
               ))}
@@ -87,7 +98,7 @@ export function FanChart({ sim, title = 'Simulated wealth' }: { sim: Simulation;
           <tbody>
             {tableRows.map((r) => (
               <tr key={r.t} className="border-t">
-                <th scope="row" className="py-1 text-left font-normal">{r.t.toFixed(1)}</th>
+                <th scope="row" className="py-1 text-left font-normal">{xLabel(r.t)}</th>
                 {[r.p5, r.p25, r.p50, r.p75, r.p95].map((v, i) => (
                   <td key={i} className="py-1 text-right">{formatPrice(v)}</td>
                 ))}

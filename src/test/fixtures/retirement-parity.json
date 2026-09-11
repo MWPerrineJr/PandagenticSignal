@@ -1,0 +1,1045 @@
+[
+ {
+  "inputs": {
+   "current_age": 40,
+   "retirement_age": 65,
+   "life_expectancy": 90,
+   "current_savings": 150000,
+   "monthly_contribution": 1000,
+   "expected_return": 0.06,
+   "inflation": 0.025,
+   "annual_spending": 50000
+  },
+  "points": [
+   {
+    "age": 40,
+    "year": 0,
+    "balance_nominal": 150000.0,
+    "balance_real": 150000.0,
+    "cashflow": 0.0
+   },
+   {
+    "age": 41,
+    "year": 1,
+    "balance_nominal": 171000.0,
+    "balance_real": 166829.26829268294,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 42,
+    "year": 2,
+    "balance_nominal": 193260.0,
+    "balance_real": 183947.6502082094,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 43,
+    "year": 3,
+    "balance_nominal": 216855.6,
+    "balance_real": 201371.98241464872,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 44,
+    "year": 4,
+    "balance_nominal": 241866.93600000002,
+    "balance_real": 219119.50662494113,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 45,
+    "year": 5,
+    "balance_nominal": 268378.95216000004,
+    "balance_real": 237207.88757076557,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 46,
+    "year": 6,
+    "balance_nominal": 296481.68928960006,
+    "balance_real": 255655.23148909828,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 47,
+    "year": 7,
+    "balance_nominal": 326270.5906469761,
+    "balance_real": 274480.1051414344,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 48,
+    "year": 8,
+    "balance_nominal": 357846.82608579466,
+    "balance_real": 293701.5553862649,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 49,
+    "year": 9,
+    "balance_nominal": 391317.63565094233,
+    "balance_real": 313339.1293260468,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 50,
+    "year": 10,
+    "balance_nominal": 426796.6937899989,
+    "balance_real": 333412.89505057177,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 51,
+    "year": 11,
+    "balance_nominal": 464404.49541739887,
+    "balance_real": 353943.4629993316,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 52,
+    "year": 12,
+    "balance_nominal": 504268.76514244283,
+    "balance_real": 374952.00796619395,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 53,
+    "year": 13,
+    "balance_nominal": 546524.8910509894,
+    "balance_real": 396460.2917704482,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 54,
+    "year": 14,
+    "balance_nominal": 591316.3845140488,
+    "balance_real": 418490.68661904644,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 55,
+    "year": 15,
+    "balance_nominal": 638795.3675848917,
+    "balance_real": 441066.19918566715,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 56,
+    "year": 16,
+    "balance_nominal": 689123.0896399852,
+    "balance_real": 464210.4954330488,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 57,
+    "year": 17,
+    "balance_nominal": 742470.4750183844,
+    "balance_real": 487947.9262059017,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 58,
+    "year": 18,
+    "balance_nominal": 799018.7035194875,
+    "balance_real": 512303.55362258625,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 59,
+    "year": 19,
+    "balance_nominal": 858959.8257306569,
+    "balance_real": 537303.1782946675,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 60,
+    "year": 20,
+    "balance_nominal": 922497.4152744963,
+    "balance_real": 562973.3674044013,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 61,
+    "year": 21,
+    "balance_nominal": 989847.2601909662,
+    "balance_real": 589341.4836711916,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 62,
+    "year": 22,
+    "balance_nominal": 1061238.0958024242,
+    "balance_real": 616435.7152390775,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 63,
+    "year": 23,
+    "balance_nominal": 1136912.3815505698,
+    "balance_real": 644285.1065183572,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 64,
+    "year": 24,
+    "balance_nominal": 1217127.1244436041,
+    "balance_real": 672919.5900155518,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 65,
+    "year": 25,
+    "balance_nominal": 1302154.7519102204,
+    "balance_real": 702370.0191870352,
+    "cashflow": 12000.0
+   },
+   {
+    "age": 66,
+    "year": 26,
+    "balance_nominal": 1285269.4019858234,
+    "balance_real": 676353.385695861,
+    "cashflow": -95014.63503901026
+   },
+   {
+    "age": 67,
+    "year": 27,
+    "balance_nominal": 1264995.5651899874,
+    "balance_real": 649448.3793537684,
+    "cashflow": -97390.00091498552
+   },
+   {
+    "age": 68,
+    "year": 28,
+    "balance_nominal": 1241070.5481635265,
+    "balance_real": 621624.6654780435,
+    "cashflow": -99824.75093786015
+   },
+   {
+    "age": 69,
+    "year": 29,
+    "balance_nominal": 1213214.4113420316,
+    "balance_real": 592850.8735675378,
+    "cashflow": -102320.36971130664
+   },
+   {
+    "age": 70,
+    "year": 30,
+    "balance_nominal": 1181128.8970684642,
+    "balance_real": 563094.5619332587,
+    "cashflow": -104878.37895408929
+   },
+   {
+    "age": 71,
+    "year": 31,
+    "balance_nominal": 1144496.2924646307,
+    "balance_real": 532322.1811212237,
+    "cashflow": -107500.33842794153
+   },
+   {
+    "age": 72,
+    "year": 32,
+    "balance_nominal": 1102978.2231238687,
+    "balance_real": 500499.0360863388,
+    "cashflow": -110187.84688864005
+   },
+   {
+    "age": 73,
+    "year": 33,
+    "balance_nominal": 1056214.373450445,
+    "balance_real": 467589.247074653,
+    "cashflow": -112942.54306085604
+   },
+   {
+    "age": 74,
+    "year": 34,
+    "balance_nominal": 1003821.1292200944,
+    "balance_real": 433555.70916988514,
+    "cashflow": -115766.10663737744
+   },
+   {
+    "age": 75,
+    "year": 35,
+    "balance_nominal": 945390.1376699882,
+    "balance_real": 398360.05045861297,
+    "cashflow": -118660.25930331186
+   },
+   {
+    "age": 76,
+    "year": 36,
+    "balance_nominal": 880486.7801442929,
+    "balance_real": 361962.5887669559,
+    "cashflow": -121626.76578589465
+   },
+   {
+    "age": 77,
+    "year": 37,
+    "balance_nominal": 808648.5520224085,
+    "balance_real": 324322.28691997397,
+    "cashflow": -124667.434930542
+   },
+   {
+    "age": 78,
+    "year": 38,
+    "balance_nominal": 729383.3443399474,
+    "balance_real": 285396.70647333894,
+    "cashflow": -127784.12080380555
+   },
+   {
+    "age": 79,
+    "year": 39,
+    "balance_nominal": 642167.6211764436,
+    "balance_real": 245141.95986511154,
+    "cashflow": -130978.72382390065
+   },
+   {
+    "age": 80,
+    "year": 40,
+    "balance_nominal": 546444.4865275321,
+    "balance_real": 203512.66093367635,
+    "cashflow": -134253.19191949817
+   },
+   {
+    "age": 81,
+    "year": 41,
+    "balance_nominal": 441621.63400169846,
+    "balance_real": 160461.87374604578,
+    "cashflow": -137609.52171748562
+   },
+   {
+    "age": 82,
+    "year": 42,
+    "balance_nominal": 327069.1722813777,
+    "balance_real": 115941.05967883766,
+    "cashflow": -141049.75976042272
+   },
+   {
+    "age": 83,
+    "year": 43,
+    "balance_nominal": 202117.3188638271,
+    "balance_real": 69900.0226922614,
+    "cashflow": -144576.0037544333
+   },
+   {
+    "age": 84,
+    "year": 44,
+    "balance_nominal": 66053.95414736262,
+    "balance_real": 22286.852735411783,
+    "cashflow": -148190.4038482941
+   },
+   {
+    "age": 85,
+    "year": 45,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -151895.16394450146
+   },
+   {
+    "age": 86,
+    "year": 46,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -155692.54304311398
+   },
+   {
+    "age": 87,
+    "year": 47,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -159584.85661919182
+   },
+   {
+    "age": 88,
+    "year": 48,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -163574.4780346716
+   },
+   {
+    "age": 89,
+    "year": 49,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -167663.8399855384
+   },
+   {
+    "age": 90,
+    "year": 50,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -171855.4359851768
+   }
+  ]
+ },
+ {
+  "inputs": {
+   "current_age": 30,
+   "retirement_age": 50,
+   "life_expectancy": 95,
+   "current_savings": 0,
+   "monthly_contribution": 500,
+   "expected_return": 0.0,
+   "inflation": 0.0,
+   "annual_spending": 40000
+  },
+  "points": [
+   {
+    "age": 30,
+    "year": 0,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": 0.0
+   },
+   {
+    "age": 31,
+    "year": 1,
+    "balance_nominal": 6000.0,
+    "balance_real": 6000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 32,
+    "year": 2,
+    "balance_nominal": 12000.0,
+    "balance_real": 12000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 33,
+    "year": 3,
+    "balance_nominal": 18000.0,
+    "balance_real": 18000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 34,
+    "year": 4,
+    "balance_nominal": 24000.0,
+    "balance_real": 24000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 35,
+    "year": 5,
+    "balance_nominal": 30000.0,
+    "balance_real": 30000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 36,
+    "year": 6,
+    "balance_nominal": 36000.0,
+    "balance_real": 36000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 37,
+    "year": 7,
+    "balance_nominal": 42000.0,
+    "balance_real": 42000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 38,
+    "year": 8,
+    "balance_nominal": 48000.0,
+    "balance_real": 48000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 39,
+    "year": 9,
+    "balance_nominal": 54000.0,
+    "balance_real": 54000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 40,
+    "year": 10,
+    "balance_nominal": 60000.0,
+    "balance_real": 60000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 41,
+    "year": 11,
+    "balance_nominal": 66000.0,
+    "balance_real": 66000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 42,
+    "year": 12,
+    "balance_nominal": 72000.0,
+    "balance_real": 72000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 43,
+    "year": 13,
+    "balance_nominal": 78000.0,
+    "balance_real": 78000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 44,
+    "year": 14,
+    "balance_nominal": 84000.0,
+    "balance_real": 84000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 45,
+    "year": 15,
+    "balance_nominal": 90000.0,
+    "balance_real": 90000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 46,
+    "year": 16,
+    "balance_nominal": 96000.0,
+    "balance_real": 96000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 47,
+    "year": 17,
+    "balance_nominal": 102000.0,
+    "balance_real": 102000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 48,
+    "year": 18,
+    "balance_nominal": 108000.0,
+    "balance_real": 108000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 49,
+    "year": 19,
+    "balance_nominal": 114000.0,
+    "balance_real": 114000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 50,
+    "year": 20,
+    "balance_nominal": 120000.0,
+    "balance_real": 120000.0,
+    "cashflow": 6000.0
+   },
+   {
+    "age": 51,
+    "year": 21,
+    "balance_nominal": 80000.0,
+    "balance_real": 80000.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 52,
+    "year": 22,
+    "balance_nominal": 40000.0,
+    "balance_real": 40000.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 53,
+    "year": 23,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 54,
+    "year": 24,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 55,
+    "year": 25,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 56,
+    "year": 26,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 57,
+    "year": 27,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 58,
+    "year": 28,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 59,
+    "year": 29,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 60,
+    "year": 30,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 61,
+    "year": 31,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 62,
+    "year": 32,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 63,
+    "year": 33,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 64,
+    "year": 34,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 65,
+    "year": 35,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 66,
+    "year": 36,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 67,
+    "year": 37,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 68,
+    "year": 38,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 69,
+    "year": 39,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 70,
+    "year": 40,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 71,
+    "year": 41,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 72,
+    "year": 42,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 73,
+    "year": 43,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 74,
+    "year": 44,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 75,
+    "year": 45,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 76,
+    "year": 46,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 77,
+    "year": 47,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 78,
+    "year": 48,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 79,
+    "year": 49,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 80,
+    "year": 50,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 81,
+    "year": 51,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 82,
+    "year": 52,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 83,
+    "year": 53,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 84,
+    "year": 54,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 85,
+    "year": 55,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 86,
+    "year": 56,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 87,
+    "year": 57,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 88,
+    "year": 58,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 89,
+    "year": 59,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 90,
+    "year": 60,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 91,
+    "year": 61,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 92,
+    "year": 62,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 93,
+    "year": 63,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 94,
+    "year": 64,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   },
+   {
+    "age": 95,
+    "year": 65,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -40000.0
+   }
+  ]
+ },
+ {
+  "inputs": {
+   "current_age": 55,
+   "retirement_age": 60,
+   "life_expectancy": 80,
+   "current_savings": 800000,
+   "monthly_contribution": 0,
+   "expected_return": -0.02,
+   "inflation": 0.03,
+   "annual_spending": 90000
+  },
+  "points": [
+   {
+    "age": 55,
+    "year": 0,
+    "balance_nominal": 800000.0,
+    "balance_real": 800000.0,
+    "cashflow": 0.0
+   },
+   {
+    "age": 56,
+    "year": 1,
+    "balance_nominal": 784000.0,
+    "balance_real": 761165.0485436893,
+    "cashflow": 0.0
+   },
+   {
+    "age": 57,
+    "year": 2,
+    "balance_nominal": 768320.0,
+    "balance_real": 724215.2889056462,
+    "cashflow": 0.0
+   },
+   {
+    "age": 58,
+    "year": 3,
+    "balance_nominal": 752953.6,
+    "balance_real": 689059.2069199352,
+    "cashflow": 0.0
+   },
+   {
+    "age": 59,
+    "year": 4,
+    "balance_nominal": 737894.5279999999,
+    "balance_real": 655609.7308558605,
+    "cashflow": 0.0
+   },
+   {
+    "age": 60,
+    "year": 5,
+    "balance_nominal": 723136.63744,
+    "balance_real": 623784.0157657702,
+    "cashflow": 0.0
+   },
+   {
+    "age": 61,
+    "year": 6,
+    "balance_nominal": 601209.19800359,
+    "balance_real": 503503.2383014125,
+    "cashflow": -107464.70668761001
+   },
+   {
+    "age": 62,
+    "year": 7,
+    "balance_nominal": 478496.3661552799,
+    "balance_real": 389061.33352949924,
+    "cashflow": -110688.64788823832
+   },
+   {
+    "age": 63,
+    "year": 8,
+    "balance_nominal": 354917.1315072888,
+    "balance_real": 280174.8610280672,
+    "cashflow": -114009.30732488548
+   },
+   {
+    "age": 64,
+    "year": 9,
+    "balance_nominal": 230389.20233251096,
+    "balance_real": 176574.1396189377,
+    "cashflow": -117429.58654463204
+   },
+   {
+    "age": 65,
+    "year": 10,
+    "balance_nominal": 104828.94414488974,
+    "balance_real": 78002.57944326111,
+    "cashflow": -120952.474140971
+   },
+   {
+    "age": 66,
+    "year": 11,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -124581.04836520013
+   },
+   {
+    "age": 67,
+    "year": 12,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -128318.47981615613
+   },
+   {
+    "age": 68,
+    "year": 13,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -132168.03421064082
+   },
+   {
+    "age": 69,
+    "year": 14,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -136133.07523696008
+   },
+   {
+    "age": 70,
+    "year": 15,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -140217.06749406885
+   },
+   {
+    "age": 71,
+    "year": 16,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -144423.57951889094
+   },
+   {
+    "age": 72,
+    "year": 17,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -148756.28690445767
+   },
+   {
+    "age": 73,
+    "year": 18,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -153218.97551159142
+   },
+   {
+    "age": 74,
+    "year": 19,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -157815.54477693915
+   },
+   {
+    "age": 75,
+    "year": 20,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -162550.01112024733
+   },
+   {
+    "age": 76,
+    "year": 21,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -167426.51145385474
+   },
+   {
+    "age": 77,
+    "year": 22,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -172449.3067974704
+   },
+   {
+    "age": 78,
+    "year": 23,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -177622.78600139453
+   },
+   {
+    "age": 79,
+    "year": 24,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -182951.46958143637
+   },
+   {
+    "age": 80,
+    "year": 25,
+    "balance_nominal": 0.0,
+    "balance_real": 0.0,
+    "cashflow": -188440.01366887946
+   }
+  ]
+ }
+]

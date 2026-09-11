@@ -13,6 +13,7 @@ export const NAV_ITEMS = [
   { to: '/analysts', label: 'Analysts' },
   { to: '/crypto', label: 'Crypto' },
   { to: '/portfolio', label: 'Portfolio' },
+  { to: '/retirement', label: 'Retirement' },
 ] as const
 
 export function AppShell() {

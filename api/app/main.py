@@ -10,7 +10,7 @@ from app.errors import (
 )
 from app.logging_config import access_log_middleware, configure_logging
 from app.ratelimit import RateLimiter
-from app.routers import crypto, history, portfolio, quotes, recommendations, search
+from app.routers import crypto, history, portfolio, quotes, recommendations, retirement, search
 from app.settings import Settings, get_settings
 
 
@@ -21,7 +21,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     limiter = RateLimiter(
         settings.rate_limit,
-        overrides={"/portfolio/simulate": settings.simulate_rate_limit},
+        overrides={
+            "/portfolio/simulate": settings.simulate_rate_limit,
+            "/retirement": settings.simulate_rate_limit,
+        },
         enabled=settings.rate_limit_enabled,
     )
     app.state.limiter = limiter
@@ -67,6 +70,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         recommendations.router,
         crypto.router,
         portfolio.router,
+        retirement.router,
     )
     for r in routers:
         app.include_router(r)

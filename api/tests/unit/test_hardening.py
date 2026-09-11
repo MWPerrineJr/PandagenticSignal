@@ -54,6 +54,18 @@ def test_simulate_has_its_own_rate_limit_window(make_client) -> None:
     r = client.get("/quote/AAPL")
     assert r.status_code == 200 and r.headers["x-ratelimit-remaining"] == "9"
     assert client.post("/portfolio/analyse", json=body).status_code == 200
+    # /retirement shares the tighter rule but its own window.
+    retire = {
+        "current_age": 30,
+        "retirement_age": 60,
+        "life_expectancy": 85,
+        "current_savings": 1,
+        "monthly_contribution": 1,
+        "annual_spending": 1,
+        "n_sims": 100,
+    }
+    assert client.post("/retirement/project", json=retire).status_code == 200
+    assert client.post("/retirement/project", json=retire).status_code == 429
 
 
 def test_cors_preflight_allows_post(make_client) -> None:

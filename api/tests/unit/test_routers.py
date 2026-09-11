@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from app.errors import RateLimitedError, UpstreamError
@@ -211,6 +212,62 @@ def test_portfolio_simulate_is_seeded_and_shaped(client: TestClient) -> None:
     assert out["stats"]["symbols"] == ["AAPL", "MSFT"]
     assert client.post("/portfolio/simulate", json=body).json() == out  # same seed, same paths
     assert client.post("/portfolio/simulate", json={**body, "seed": 43}).json() != out
+
+
+RETIRE = {
+    "current_age": 40,
+    "retirement_age": 65,
+    "life_expectancy": 90,
+    "current_savings": 150_000,
+    "monthly_contribution": 1_000,
+    "expected_return": 0.06,
+    "inflation": 0.025,
+    "annual_spending": 50_000,
+    "n_sims": 300,
+    "seed": 3,
+}
+
+
+def test_retirement_project_parametric(client: TestClient) -> None:
+    r = client.post("/retirement/project", json=RETIRE)
+    assert r.status_code == 200, r.text
+    out = r.json()
+    assert out["assumptions"] == {"mu": 0.06, "sigma": 0.12, "source": "parametric", "symbols": []}
+    det = out["deterministic"]
+    assert det[0]["age"] == 40 and det[-1]["age"] == 90 and len(det) == 51
+    assert det[1]["balance_nominal"] == pytest.approx(150_000 * 1.06 + 12_000)
+    assert det[25]["cashflow"] == 12_000 and det[26]["cashflow"] < 0
+    mc = out["monte_carlo"]
+    assert 0 <= mc["success_probability"] <= 1
+    assert mc["ages"] == list(range(40, 91))
+    assert set(mc["bands"]) == {"p5", "p25", "p50", "p75", "p95"}
+    assert mc["n_sims"] == 300
+    assert client.post("/retirement/project", json=RETIRE).json() == out  # seeded
+
+
+def test_retirement_project_portfolio_mode(client: TestClient) -> None:
+    body = {
+        **RETIRE,
+        "mode": "portfolio",
+        "holdings": [{"symbol": "AAPL", "weight": 1}, {"symbol": "MSFT", "weight": 1}],
+    }
+    r = client.post("/retirement/project", json=body)
+    assert r.status_code == 200, r.text
+    a = r.json()["assumptions"]
+    assert a["source"] == "portfolio" and a["symbols"] == ["AAPL", "MSFT"]
+    assert a["sigma"] > 0 and -0.5 <= a["mu"] <= 0.5  # derived moments are clamped
+
+
+def test_retirement_validation(client: TestClient) -> None:
+    post = lambda **kw: client.post("/retirement/project", json={**RETIRE, **kw}).status_code  # noqa: E731
+    assert post(retirement_age=40) == 422
+    assert post(life_expectancy=65) == 422
+    assert post(life_expectancy=120) == 422
+    assert post(expected_return=0.9) == 422
+    assert post(n_sims=50_000) == 422
+    assert post(mode="portfolio") == 422  # no holdings
+    assert post(mode="portfolio", holdings=[{"symbol": "NOPE", "weight": 1}]) == 404
+    assert post(current_savings=-5) == 422
 
 
 def test_cors_allows_dev_origin(client: TestClient) -> None:
