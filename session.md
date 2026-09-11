@@ -268,7 +268,9 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 9 (Portfolio + Monte Carlo, note 39) and 10 (Retirement, note 40) are built, tested, committed and pushed
 to `main` with CI green on every commit (latest `37cde46`) and **deployed 2026-09-11** (Render + Lovable);
 Playwright 6/6 against https://pandagenticsignal.com. Phases 8–10 closed.
-**Phase 11 (AI news sentiment, note 41) is live (note 42); the expansion plan (Phases 8–11) is complete.** What remains is the polish backlog below
+**Phase 11 (AI news sentiment, note 41) is live (note 42); the expansion plan (Phases 8–11) is complete.**
+**Next: "Expansion plan 2" (Phases 12–14: indicator library + picker, FAQ + disclosure, polish) — written
+2026-09-11, awaiting the user's answers to its three decisions before Phase 12 starts.** After that, what remains is the polish backlog below
 (dialogs instead of `window.prompt`, pgTAP via `supabase test db --linked`, bundle splitting, …) and
 optionally server-side refusal fallbacks for the sentiment call. Pull first (`git pull`).
 **Before anything else on this Mac:** `find . -type f -flags +dataless | wc -l` must be 0 (note 36).
@@ -307,6 +309,107 @@ pgTAP tests; split the main bundle further; retry in `MarketData._history` on tr
 3. Previous plan for reference — **Phase 7** — Hardening, deployment, Lovable import. Order: (a) API `Dockerfile` + `slowapi` rate limiting + CORS from env + `/health` used by the host; deploy to Render or Railway (user picks; needs an account and will ask for env vars `STOCK_API_CORS_ORIGINS`); (b) Playwright E2E smoke (search → chart → watchlist → analysts) against the dev servers, plus a CI job; (c) `gh repo create` + push (CI runs), then Lovable import via GitHub with `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`; (d) README architecture + run + deploy sections; (e) optional Supabase edge-function proxy if the API host needs hiding; (f) final checkpoint. Optional polish first: replace `window.prompt`/`confirm` in the dashboard toolbar with dialogs. Optional: `supabase link --project-ref agumrmsaeblcldcygajl` then `supabase test db --linked` for the pgTAP RLS tests.
 2. Optional: move `api/app/stock-tool.code-workspace` to the repo root (adjust `path` to `.`).
 3. Optional: `pip install pre-commit && pre-commit install`; `gh repo create` and push so CI runs (otherwise Phase 7).
+
+## Expansion plan 2 (Phases 12–14, proposed 2026-09-11, awaiting approval)
+
+Requested by the user after Phase 11 shipped: (a) a dropdown to pick technical indicators, with the
+20 most-used indicators available for stocks **and** crypto; (b) a FAQ page covering the tool's
+assumptions, the API endpoints, and pricing delays; (c) a legal disclosure that nothing here is an
+investment recommendation and use is at the reader's own risk. Polish backlog (Phase 14) after.
+
+### Phase 12 — Indicator library + picker (stocks and crypto)
+
+**Goal:** one server-side registry of 20 indicators, computed on request for any symbol
+`MarketData.history` can serve (Yahoo or Coinbase, so crypto comes free), drawn on the price pane
+or in stacked oscillator panes, chosen from a grouped dropdown that remembers the selection.
+
+**The 20** (defaults in brackets; all pure pandas in `api/app/services/indicators.py`):
+- Overlays (price pane): 1 SMA [20, 50, 200 selectable], 2 EMA [10/30/60/90, existing], 3 Bollinger
+  Bands [20, 2σ, existing — add the fill], 4 VWAP [session VWAP intraday; cumulative from period start
+  on daily/weekly — say so in the legend], 5 Parabolic SAR [0.02, 0.2], 6 Ichimoku Cloud [9/26/52],
+  7 Keltner Channels [EMA 20, ATR 10 × 2], 8 Donchian Channels [20], 9 Support/Resistance [existing],
+  10 Pivot Points [classic, previous bar].
+- Oscillators (own pane each): 11 RSI [14], 12 MACD [12/26/9, histogram], 13 Stochastic [%K 14, %D 3],
+  14 ADX with +DI/−DI [14], 15 ATR [14], 16 CCI [20], 17 OBV, 18 Williams %R [14], 19 MFI [14],
+  20 Rate of Change [12].
+
+**API**
+- `IndicatorSpec` registry: `id`, `name`, `kind` (`overlay`|`pane`), `params` (name, default, min, max),
+  `outputs` (named lines, e.g. MACD → `macd`, `signal`, `hist`), `compute(df, **params) -> DataFrame`,
+  one-line `description` and `formula` (the FAQ and the picker tooltips read these).
+- `GET /indicators/catalog` → the registry as JSON (drives the dropdown, so the frontend never
+  hard-codes the list).
+- `GET /indicators/{ticker}?period&interval&ind=rsi:14,macd:12-26-9,sma:50` — compute only what is
+  asked; `ind` absent = today's defaults (EMA set + Bollinger + S/R) so nothing existing breaks.
+  Response adds `series: {id: {kind, params, outputs: {name: [float|null]}}}`; keep `ema`,
+  `bollinger`, `levels` for one release, then drop. Cap at 8 indicators per request (422 beyond),
+  validate params against the spec (422), warm-up NaNs as `null`.
+- Tests: hand-checked reference sequences for each indicator (10–30 bars, computed by hand or from a
+  second independent implementation in the test file), invariants (RSI/MFI/Stoch/%R in range,
+  channel ordering upper ≥ middle ≥ lower, OBV monotone with sign of returns), the catalog matches
+  the registry, param validation, crypto symbol through the same route (fake Coinbase candles).
+
+**Frontend**
+- `src/lib/indicators.ts`: catalog types, `parseIndicatorParam` / `serialiseIndicatorParam` for a
+  new URL param `ind=` (keep reading the old `ov=` for shared links), selection store (zustand
+  persist `stock-tool.indicators`, per-user later if wanted), max 8 active.
+- `IndicatorPicker` (shadcn DropdownMenu with checkbox items grouped Overlays / Oscillators, a small
+  param editor for the highlighted item, "Reset to defaults"), used on the Charts tab, in the Chart
+  widget settings and under the Crypto coin detail. Compare mode still hides indicators.
+- `PriceChart`: overlays on pane 0; each oscillator in its own lightweight-charts v5 pane
+  (`addSeries(..., paneIndex)`), with reference lines (RSI 30/70, %R −20/−80, CCI ±100, MACD zero),
+  a per-pane legend showing the hovered value, and the Bollinger fill via a custom primitive
+  (closes a backlog item).
+- Tests: picker (grouping, toggle, params, cap), URL round-trip incl. legacy `ov`, chart renders N
+  panes, catalog fixture + MSW handler; e2e: pick RSI + MACD on AAPL and on BTC-USD, panes appear.
+
+### Phase 13 — FAQ + legal disclosure
+
+**Goal:** a `/faq` page that explains what the tool assumes, where every number comes from and how
+stale it can be, plus a disclosure that is impossible to miss but not annoying.
+
+- Content as typed data in `src/content/faq.ts` (sections → Q&A), rendered by `faq-page.tsx` with
+  an in-page table of contents and anchor links (`/faq#delays`), nav item "FAQ".
+- Sections: **What this is** · **Data sources and delays** (Yahoo quotes delayed ~15–20 min for most
+  exchanges, intraday bars likewise; Coinbase prices are exchange-live, cached 60 s; CoinGecko
+  ranking/market cap cached 5 min; analyst data refreshed daily by Yahoo, cached 1 h; news cached
+  15 min; sentiment 1 h per symbol) · **Assumptions** (Monte Carlo: lognormal returns with μ/σ from
+  the chosen history, covariance shrinkage, rebalanced each step, no taxes/fees, dividends only via
+  Yahoo's adjusted closes; retirement: yearly steps, contributions stop at retirement, spending grows
+  with inflation, bands in today's dollars, success = money left at life expectancy; Sharpe with 0%
+  risk-free; correlation on log returns; how S/R levels are found; indicator formulas and defaults
+  pulled from the catalog) · **API endpoints** (method, path, purpose, cache, rate limit) ·
+  **Accounts and privacy** (what Supabase stores, RLS, what stays in the browser) · **Limits**
+  (20 holdings, rate limits, 8 indicators).
+- Keep it honest by construction: `api/scripts/export_endpoints.py` writes
+  `src/content/endpoints.json` from the FastAPI app (path, method, summary, tags, cache TTL and
+  limiter rule from settings); a Python test fails if the JSON is stale, so the FAQ table cannot
+  drift from the real API. Indicator definitions come from `/indicators/catalog` at runtime.
+- **Legal disclosure:** `/disclaimer` page (not investment advice or a recommendation; no warranty
+  of accuracy or timeliness of third-party data; simulations are hypothetical and past performance
+  does not predict results; AI sentiment is an automated summary; you invest at your own risk;
+  consult a licensed adviser; Yahoo/Coinbase/CoinGecko data subject to their terms) + a one-line
+  footer on every page ("Not investment advice · Disclaimer") + a one-time acknowledgement bar
+  ("I understand", remembered in localStorage) + the sentiment panel's disclaimer links to it.
+  The text is a starting draft — the user should have it reviewed; it is not legal advice.
+- Tests: FAQ renders every section and the endpoint table from the JSON, anchors work, disclaimer
+  page renders, acknowledgement bar shows once; e2e: nav → FAQ, footer → disclaimer.
+
+### Phase 14 — polish backlog (unchanged list, after 12–13)
+Dialogs for the dashboard toolbar; pgTAP via `supabase test db --linked`; sentiment refusal
+fallback; S/R `order` scaling; Yahoo `recommendationKey`; bundle splitting; `_history` retry.
+
+### Order and checkpoints
+12 → 13 → 14, each closed with the usual checkpoint (ruff + pytest ≥80% cov → lint + typecheck +
+vitest + build → session.md entry → commit/push → Render Manual Deploy + Lovable Publish →
+Playwright against pandagenticsignal.com). Phase 12 is the big one (two sessions: API registry +
+tests, then picker + panes); 13 is one session; 14 is small items.
+
+### Decisions to confirm before starting
+1. The list of 20 above (swap any: candidates left out — Chaikin Money Flow, Awesome Oscillator,
+   TRIX, Supertrend, Volume SMA).
+2. Disclosure placement: page + footer line + one-time acknowledgement bar (proposed), or page only.
+3. Indicator selection remembered per browser (proposed) vs. saved to the account.
 
 ## Expansion plan (Phases 8–11, approved 2026-09-08)
 
