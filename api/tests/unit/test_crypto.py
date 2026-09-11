@@ -7,6 +7,7 @@ from app.services.cache import Cache
 from app.services.crypto import (
     CANDLES_PER_REQUEST,
     MAX_CANDLE_REQUESTS,
+    STALE_MARKETS_MAX_AGE,
     CryptoData,
     NotFound,
     base_symbol,
@@ -197,6 +198,33 @@ def test_top_uses_coingecko_prices_when_coinbase_is_down(
     top = crypto.top(limit=2)
     assert [c.price_source for c in top.coins] == ["coingecko", "coingecko"]
     assert top.coins[0].price == 64990
+
+
+def test_top_serves_stale_ranking_when_coingecko_fails(
+    crypto: CryptoData, fake_fetch: FakeFetch
+) -> None:
+    first = crypto.top(3)
+    crypto.cache.invalidate("cg_markets")
+    crypto.cache.invalidate("crypto_top")
+    fake_fetch.error = RateLimitedError("slow down")
+    again = crypto.top(3)
+    assert [c.symbol for c in again.coins] == [c.symbol for c in first.coins]
+    fake_fetch.error = UpstreamError("boom")
+    crypto.cache.invalidate("crypto_top")
+    assert len(crypto.top(3).coins) == len(first.coins)
+
+
+def test_stale_ranking_expires(fake_fetch: FakeFetch) -> None:
+    clock = [FAKE_NOW]
+    crypto = CryptoData(
+        cache=Cache(), settings=Settings(), fetch_json=fake_fetch, now=lambda: clock[0]
+    )
+    crypto.top(3)
+    crypto.cache.invalidate()
+    clock[0] += STALE_MARKETS_MAX_AGE + 1
+    fake_fetch.error = RateLimitedError("slow down")
+    with pytest.raises(RateLimitedError):
+        crypto.top(3)
 
 
 def test_top_propagates_coingecko_errors(crypto: CryptoData, fake_fetch: FakeFetch) -> None:

@@ -21,9 +21,13 @@ export const queryKeys = {
   sentiment: (symbol: string) => ['sentiment', normaliseSymbol(symbol)] as const,
 }
 
-/** Never retry a client error (404 unknown symbol, 422 bad request, 429 rate limited) or a 503 (feature off). */
+/**
+ * Never retry a client error (404 unknown symbol, 422 bad request, 429 rate limited). A 503 *is*
+ * retried: it is how the API reports a throttled upstream (Yahoo, CoinGecko), which clears in
+ * seconds. Sentiment opts out with `retry: false` because its 503 means "no key".
+ */
 export function retryUnlessNotFound(failureCount: number, error: unknown): boolean {
-  if (error instanceof ApiError && (error.isNotFound || error.status === 422 || error.isRateLimited || error.isUnavailable)) return false
+  if (error instanceof ApiError && (error.isNotFound || error.status === 422 || error.isRateLimited)) return false
   return failureCount < 2
 }
 

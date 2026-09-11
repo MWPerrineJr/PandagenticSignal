@@ -12,6 +12,7 @@ injectable so unit tests never touch the network.
 
 from __future__ import annotations
 
+import logging
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -69,6 +70,10 @@ class NotFound(LookupError):
     """The upstream answered 404 for this resource."""
 
 
+STALE_MARKETS_MAX_AGE = 24 * 60 * 60
+log = logging.getLogger(__name__)
+
+
 def make_fetcher(settings: Settings, transport: httpx.BaseTransport | None = None) -> FetchJson:
     """HTTP GET returning parsed JSON, with upstream failures mapped to domain errors."""
     client = httpx.Client(
@@ -122,6 +127,7 @@ class CryptoData:
         self.settings = settings or get_settings()
         # Own cache: its lock must not serialise the (slower) yfinance calls in MarketData.
         self.cache = cache or Cache()
+        self._stale_markets: tuple[int, list[dict[str, Any]]] | None = None
         self.fetch = fetch_json or make_fetcher(self.settings)
         self.now = now
 
@@ -288,8 +294,26 @@ class CryptoData:
     # -- top coins --------------------------------------------------------------------------
 
     def _markets(self) -> list[dict[str, Any]]:
-        """CoinGecko's top coins by market cap (one page, cached)."""
+        """CoinGecko's top coins by market cap (one page, cached).
 
+        CoinGecko's keyless tier is throttled per source IP, which a hosted API shares with
+        strangers, so a fresh fetch fails now and then. Ranking and market cap move slowly:
+        when the fetch fails and a copy from the last `STALE_MARKETS_MAX_AGE` exists, serve it
+        (Coinbase prices stay live) rather than blanking the crypto tab.
+        """
+        try:
+            return self.cache.get_or_set(
+                "cg_markets", QUOTE_CCY, self.settings.crypto_ttl, self._fetch_markets
+            )
+        except (RateLimitedError, UpstreamError) as exc:
+            stale = self._stale_markets
+            if stale is None or self.now() - stale[0] > STALE_MARKETS_MAX_AGE:
+                raise
+            age = int(self.now() - stale[0])
+            log.warning("CoinGecko unavailable (%s); serving ranking from %ds ago", exc, age)
+            return stale[1]
+
+    def _fetch_markets(self) -> list[dict[str, Any]]:
         def fetch() -> list[dict[str, Any]]:
             data = self.fetch(
                 self._cg("/coins/markets"),
@@ -305,7 +329,9 @@ class CryptoData:
                 raise UpstreamError("CoinGecko returned an unexpected payload")
             return data
 
-        return self.cache.get_or_set("cg_markets", QUOTE_CCY, self.settings.crypto_ttl, fetch)
+        data = fetch()
+        self._stale_markets = (int(self.now()), data)
+        return data
 
     def top(self, limit: int = 25) -> CryptoTop:
         limit = max(1, min(int(limit), MAX_CRYPTO))
