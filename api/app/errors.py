@@ -23,3 +23,10 @@ class RateLimitedError(MarketDataError):
 
 class InsufficientHistoryError(MarketDataError):
     """The requested symbols share too little price history to analyse (HTTP 422)."""
+
+
+class SentimentDisabledError(MarketDataError):
+    """No Anthropic API key is configured, so `/sentiment/*` cannot run (HTTP 503)."""
+
+    def __init__(self) -> None:
+        super().__init__("Sentiment analysis is not configured")

@@ -11,6 +11,7 @@ import { LoginPage } from '@/features/auth/login-page'
 const ChartsPage = lazy(() => import('@/features/charts/charts-page').then((m) => ({ default: m.ChartsPage })))
 const CryptoPage = lazy(() => import('@/features/crypto/crypto-page').then((m) => ({ default: m.CryptoPage })))
 const PortfolioPage = lazy(() => import('@/features/portfolio/portfolio-page').then((m) => ({ default: m.PortfolioPage })))
+const SentimentPage = lazy(() => import('@/features/sentiment/sentiment-page').then((m) => ({ default: m.SentimentPage })))
 const RetirementPage = lazy(() => import('@/features/retirement/retirement-page').then((m) => ({ default: m.RetirementPage })))
 
 function PageFallback() {
@@ -53,6 +54,14 @@ export function AppRoutes() {
           element={
             <Suspense fallback={<PageFallback />}>
               <RetirementPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="sentiment"
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <SentimentPage />
             </Suspense>
           }
         />

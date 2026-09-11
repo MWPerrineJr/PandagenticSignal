@@ -1,4 +1,4 @@
-import type { CryptoTop, Indicators, PortfolioStats, Quote, Recommendations, RetirementOut, RetirementRequest, SearchResult, Simulation } from '@/lib/api'
+import type { CryptoTop, Indicators, PortfolioStats, Quote, Recommendations, RetirementOut, RetirementRequest, SearchResult, SentimentOut, Simulation } from '@/lib/api'
 import { projectDeterministic } from '@/lib/retirement'
 
 export const searchFixtures: Record<string, SearchResult[]> = {
@@ -201,5 +201,34 @@ export function makeRetirement(req: RetirementRequest, assumptions?: Partial<Ret
       terminal: { mean: last, median: last, p5: bands.p5.at(-1)!, p25: bands.p25.at(-1)!, p75: bands.p75.at(-1)!, p95: bands.p95.at(-1)!, prob_loss: 0.2, var_95: 0, var_95_pct: 0, cvar_95: 0 },
       n_sims: req.n_sims,
     },
+  }
+}
+
+export function makeSentiment(symbol = 'AAPL', overrides: Partial<SentimentOut> = {}): SentimentOut {
+  return {
+    symbol,
+    generated_at: 1_789_000_000,
+    model: 'claude-test',
+    cached: false,
+    news_count: 3,
+    report: {
+      overall: 'bullish',
+      score: 0.6,
+      confidence: 0.7,
+      themes: ['Record iPhone demand', 'Services growth', 'Regulatory scrutiny'],
+      articles: [
+        { index: 1, sentiment: 'bullish', rationale: 'Revenue beat on strong iPhone sales.' },
+        { index: 2, sentiment: 'bearish', rationale: 'A new EU probe adds regulatory risk.' },
+        { index: 3, sentiment: 'neutral', rationale: 'Services record was widely expected.' },
+      ],
+      summary: 'Coverage is broadly positive on demand, tempered by a fresh regulatory probe.',
+    },
+    articles: [
+      { index: 1, title: 'Apple beats on iPhone demand', provider: 'Reuters', published_at: '2026-09-10T12:00:00Z', url: 'https://example.com/apple-beats', sentiment: 'bullish', rationale: 'Revenue beat on strong iPhone sales.' },
+      { index: 2, title: 'EU opens new probe into App Store fees', provider: 'Bloomberg', published_at: '2026-09-10T09:30:00Z', url: 'https://example.com/eu-probe', sentiment: 'bearish', rationale: 'A new EU probe adds regulatory risk.' },
+      { index: 3, title: 'Services revenue hits record', provider: null, published_at: null, url: null, sentiment: 'neutral', rationale: 'Services record was widely expected.' },
+    ],
+    disclaimer: 'Automated summary of news tone, not investment advice.',
+    ...overrides,
   }
 }

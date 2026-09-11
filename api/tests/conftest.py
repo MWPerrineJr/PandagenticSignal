@@ -1,12 +1,14 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.deps import get_market_data
+from app.deps import get_market_data, get_sentiment_agent
 from app.main import create_app
 from app.services.cache import Cache
 from app.services.crypto import CryptoData
 from app.services.market_data import MarketData
+from app.services.sentiment import SentimentAgent
 from app.settings import Settings
+from tests.fake_anthropic import FakeAnthropic
 from tests.fakes import FAKE_NOW, FakeFetch, FakeYF, make_ohlc
 
 
@@ -33,10 +35,23 @@ def market_data(fake_yf: FakeYF, crypto: CryptoData) -> MarketData:
 
 
 @pytest.fixture
-def client(market_data: MarketData) -> TestClient:
+def fake_anthropic() -> FakeAnthropic:
+    return FakeAnthropic()
+
+
+@pytest.fixture
+def sentiment_agent(fake_anthropic: FakeAnthropic) -> SentimentAgent:
+    return SentimentAgent(
+        fake_anthropic, model="claude-test", cache=Cache(), ttl=3600, now=lambda: FAKE_NOW
+    )
+
+
+@pytest.fixture
+def client(market_data: MarketData, sentiment_agent: SentimentAgent) -> TestClient:
     """TestClient whose routers talk to the fake yfinance module, never the network."""
     app = create_app()
     app.dependency_overrides[get_market_data] = lambda: market_data
+    app.dependency_overrides[get_sentiment_agent] = lambda: sentiment_agent
     return TestClient(app)
 
 

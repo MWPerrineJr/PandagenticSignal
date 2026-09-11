@@ -121,6 +121,41 @@ class FakeFastInfo:
         return self._data[key]
 
 
+NEWS = [
+    {
+        "id": "n1",
+        "content": {
+            "title": "Apple beats on iPhone demand",
+            "summary": "Quarterly revenue topped estimates as iPhone sales surged.",
+            "pubDate": "2026-09-10T12:00:00Z",
+            "provider": {"displayName": "Reuters"},
+            "canonicalUrl": {"url": "https://example.com/apple-beats"},
+        },
+    },
+    {
+        "id": "n2",
+        "content": {
+            "title": "EU opens new probe into App Store fees",
+            "summary": "",
+            "pubDate": "2026-09-10T09:30:00Z",
+            "provider": {"displayName": "Bloomberg"},
+            "clickThroughUrl": {"url": "https://example.com/eu-probe"},
+        },
+    },
+    {
+        "id": "n3",
+        "content": {
+            "title": "Services revenue hits record",
+            "summary": "S" * 700,
+            "pubDate": None,
+            "provider": None,
+        },
+    },
+    {"id": "n4", "content": {"title": ""}},  # dropped: no title
+    "not-a-dict",  # dropped: unexpected shape
+]
+
+
 class FakeTicker:
     """Mimics `yfinance.Ticker` for a fixed symbol table."""
 
@@ -144,6 +179,15 @@ class FakeTicker:
         if self.symbol not in FAST_INFO:
             return pd.DataFrame()
         return make_ohlc(self._yf.history_rows)
+
+    @property
+    def news(self):
+        self._yf.maybe_raise()
+        if self.symbol == "AAPL":
+            return [dict(n) if isinstance(n, dict) else n for n in NEWS]
+        if self.symbol == "MSFT":
+            return []
+        raise AttributeError("news")
 
     @property
     def recommendations_summary(self):

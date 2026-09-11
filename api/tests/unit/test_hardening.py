@@ -4,20 +4,22 @@ import logging
 import pytest
 from fastapi.testclient import TestClient
 
-from app.deps import get_market_data
+from app.deps import get_market_data, get_sentiment_agent
 from app.logging_config import JsonFormatter, client_ip
 from app.main import create_app
 from app.services.market_data import MarketData
+from app.services.sentiment import SentimentAgent
 from app.settings import Settings
 
 
 @pytest.fixture
-def make_client(market_data: MarketData):
+def make_client(market_data: MarketData, sentiment_agent: SentimentAgent):
     """TestClient factory over the fake market data with custom settings."""
 
     def _make(**overrides) -> TestClient:
         app = create_app(Settings(**overrides))
         app.dependency_overrides[get_market_data] = lambda: market_data
+        app.dependency_overrides[get_sentiment_agent] = lambda: sentiment_agent
         return TestClient(app)
 
     return _make
@@ -66,6 +68,17 @@ def test_simulate_has_its_own_rate_limit_window(make_client) -> None:
     }
     assert client.post("/retirement/project", json=retire).status_code == 200
     assert client.post("/retirement/project", json=retire).status_code == 429
+
+
+def test_sentiment_has_its_own_rate_limit_window(make_client) -> None:
+    client = make_client(rate_limit="10/minute", sentiment_rate_limit="1/minute")
+    first = client.get("/sentiment/AAPL")
+    assert first.status_code == 200
+    assert first.headers["x-ratelimit-limit"] == "1"
+    second = client.get("/sentiment/AAPL")
+    assert second.status_code == 429
+    r = client.get("/quote/AAPL")
+    assert r.status_code == 200 and r.headers["x-ratelimit-remaining"] == "9"
 
 
 def test_cors_preflight_allows_post(make_client) -> None:

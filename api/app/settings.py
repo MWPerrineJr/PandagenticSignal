@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,6 +28,20 @@ class Settings(BaseSettings):
     # Optional CoinGecko demo key (raises the public rate limit); sent as x-cg-demo-api-key.
     coingecko_api_key: str = ""
     http_timeout: float = 10.0
+
+    # AI news sentiment (Phase 11). Empty key = feature disabled; /sentiment/* answers 503.
+    # Accepts either STOCK_API_ANTHROPIC_API_KEY or the SDK's conventional ANTHROPIC_API_KEY.
+    anthropic_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("STOCK_API_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"),
+    )
+    sentiment_model: str = "claude-opus-5"
+    sentiment_max_tokens: int = 8192
+    sentiment_effort: Literal["low", "medium", "high"] = "medium"
+    # One report per symbol per hour; Yahoo news itself is refreshed every 15 minutes.
+    sentiment_ttl: int = 60 * 60
+    news_ttl: int = 60 * 15
+    sentiment_rate_limit: str = "10/minute"
 
     # Per-client rate limit (slowapi syntax), keyed by forwarded client IP.
     rate_limit: str = "120/minute"

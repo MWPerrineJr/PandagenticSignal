@@ -271,3 +271,63 @@ class Recommendations(BaseModel):
     summary: list[RecommendationPeriod]
     price_targets: PriceTargets
     upgrades_downgrades: list[GradeChange]
+
+
+# -- news + AI sentiment (Phase 11) ------------------------------------------------------------
+
+
+class NewsItem(BaseModel):
+    title: str
+    summary: str = ""
+    published_at: str | None = None
+    provider: str | None = None
+    url: str | None = None
+
+
+Sentiment = Literal["bullish", "neutral", "bearish"]
+
+
+class ArticleSentiment(BaseModel):
+    """One article's read, as produced by the model. `index` is 1-based, matching the prompt."""
+
+    index: int
+    sentiment: Sentiment
+    rationale: str
+
+
+class SentimentReport(BaseModel):
+    """The model's structured output. Kept flat and unconstrained so the JSON schema stays
+    simple for `output_format`; bounds are stated in the prompt and clamped after parsing."""
+
+    overall: Sentiment
+    score: float
+    confidence: float
+    themes: list[str]
+    articles: list[ArticleSentiment]
+    summary: str
+
+
+class SentimentStatus(BaseModel):
+    enabled: bool
+    model: str | None = None
+
+
+class SentimentArticleOut(BaseModel):
+    index: int
+    title: str
+    provider: str | None = None
+    published_at: str | None = None
+    url: str | None = None
+    sentiment: Sentiment | None = None
+    rationale: str | None = None
+
+
+class SentimentOut(BaseModel):
+    symbol: str
+    generated_at: int
+    model: str
+    cached: bool
+    news_count: int
+    report: SentimentReport | None
+    articles: list[SentimentArticleOut]
+    disclaimer: str

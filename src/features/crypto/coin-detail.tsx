@@ -4,6 +4,7 @@ import type { OverlayId } from '@/lib/chart-data'
 import { Skeleton } from '@/components/ui/skeleton'
 import { QuoteCard } from '@/features/quote/quote-card'
 import { PriceChart } from '@/features/charts/price-chart'
+import { SentimentPanel } from '@/features/sentiment/sentiment-panel'
 
 const OVERLAYS = new Set<OverlayId>(['ema10', 'ema30'])
 
@@ -11,7 +12,8 @@ const OVERLAYS = new Set<OverlayId>(['ema10', 'ema30'])
 export function CoinDetail({ symbol }: { symbol: string }) {
   const { data, isPending, isError, error } = useIndicators(symbol, '6mo', '1d')
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(16rem,1fr)_2fr]" data-testid="coin-detail">
+    <div className="space-y-4" data-testid="coin-detail">
+      <div className="grid gap-4 lg:grid-cols-[minmax(16rem,1fr)_2fr]">
       <QuoteCard symbol={symbol} />
       {isPending ? (
         <Skeleton className="h-[360px] w-full" aria-busy aria-label="Loading chart" />
@@ -22,6 +24,8 @@ export function CoinDetail({ symbol }: { symbol: string }) {
       ) : (
         <PriceChart data={data} overlays={OVERLAYS} height={360} className="rounded-lg border" />
       )}
+      </div>
+      <SentimentPanel key={symbol} symbol={symbol} />
     </div>
   )
 }

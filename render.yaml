@@ -21,3 +21,7 @@ services:
         value: 120/minute
       - key: STOCK_API_SIMULATE_RATE_LIMIT # Monte Carlo endpoint has its own, tighter window
         value: 30/minute
+      - key: STOCK_API_SENTIMENT_RATE_LIMIT # one Claude call per request; keep this tight
+        value: 10/minute
+      - key: ANTHROPIC_API_KEY # paste the value in the Render dashboard; never committed
+        sync: false

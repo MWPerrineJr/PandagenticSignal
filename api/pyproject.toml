@@ -5,6 +5,7 @@ description = "FastAPI + yfinance market data service for the Stock Analysis Too
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=1.5.0",
     "cachetools>=7.1.8",
     "fastapi>=0.141.1",
     "httpx>=0.28",

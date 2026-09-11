@@ -21,6 +21,7 @@ from app.schemas import (
     Candle,
     CryptoTop,
     GradeChange,
+    NewsItem,
     PriceTargets,
     Quote,
     RecommendationPeriod,
@@ -64,6 +65,25 @@ def frame_to_candles(df: pd.DataFrame) -> list[Candle]:
             )
         )
     return candles
+
+
+def news_item(entry: Any) -> NewsItem | None:
+    """Reduce one `Ticker.news` entry (the `content` shape yfinance ≥0.2.50 returns)."""
+    if not isinstance(entry, dict):
+        return None
+    content = entry.get("content") if isinstance(entry.get("content"), dict) else entry
+    title = _str(content.get("title"))
+    if not title:
+        return None
+    provider = content.get("provider")
+    url_obj = content.get("canonicalUrl") or content.get("clickThroughUrl")
+    return NewsItem(
+        title=title,
+        summary=_str(content.get("summary")) or "",
+        published_at=_str(content.get("pubDate")) or _str(content.get("displayTime")),
+        provider=_str(provider.get("displayName")) if isinstance(provider, dict) else None,
+        url=_str(url_obj.get("url")) if isinstance(url_obj, dict) else _str(content.get("link")),
+    )
 
 
 class MarketData:
@@ -293,6 +313,24 @@ class MarketData:
             ),
             "upgrades_downgrades": grades,
         }
+
+    # -- news -------------------------------------------------------------------------------
+
+    def news(self, ticker: str) -> list[NewsItem]:
+        """Recent Yahoo headlines for a symbol. An empty list is a valid answer for a real
+        symbol, so the ticker is only validated (via `quote`) when nothing comes back."""
+        symbol = normalise_ticker(ticker)
+        return self.cache.get_or_set(
+            "news", symbol, self.settings.news_ttl, lambda: self._news(symbol)
+        )
+
+    def _news(self, symbol: str) -> list[NewsItem]:
+        t = self._call(self.yf.Ticker, symbol)
+        raw = self._optional(lambda: t.news) or []
+        items = [item for item in (news_item(entry) for entry in raw) if item is not None]
+        if not items:
+            self.quote(symbol)
+        return items
 
     def _optional(self, fn):
         """Fetch an analyst dataset that may be absent (ETFs, small caps). Missing → None."""

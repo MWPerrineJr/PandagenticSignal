@@ -1,5 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 
+/** The API the deployed frontend talks to; local runs use the uvicorn server Playwright starts. */
+const API_URL = process.env.E2E_API_URL ?? (process.env.E2E_BASE_URL ? 'https://stock-tool-api-qg9s.onrender.com' : 'http://localhost:8000')
+
 /** Search by company name and pick the first exchange listing. */
 async function pickSymbol(page: Page, query: string, symbol: string) {
   const search = page.getByRole('combobox', { name: 'Search symbol or company' })
@@ -116,6 +119,21 @@ test.describe('smoke (live data, signed out)', () => {
     await page.getByRole('button', { name: /run monte carlo/i }).click()
     await expect(page.getByTestId('success-probability')).toHaveText(/^\d{1,3}%$/, { timeout: 60_000 })
     await expect(page.getByRole('figure', { name: /balance in today’s dollars/i })).toBeVisible()
+  })
+
+  test('sentiment tab: analyses on demand when the API has a key, stays quiet otherwise', async ({ page }) => {
+    await page.goto('/sentiment?t=AAPL')
+    await expect(page.getByRole('heading', { level: 1, name: /Sentiment\s*AAPL/ })).toBeVisible()
+    const status = await page.request.get(`${API_URL}/sentiment/status`)
+    const { enabled } = (await status.json()) as { enabled: boolean }
+    if (!enabled) {
+      await expect(page.getByTestId('sentiment-disabled')).toBeVisible()
+      await expect(page.getByRole('button', { name: /analyse news sentiment/i })).toHaveCount(0)
+      return
+    }
+    await page.getByRole('button', { name: /analyse news sentiment/i }).click()
+    await expect(page.getByTestId('sentiment-result')).toBeVisible({ timeout: 90_000 })
+    await expect(page.getByTestId('sentiment-footer')).toContainText(/not investment advice/i)
   })
 
   test('unknown symbol shows a friendly error, not a crash', async ({ page }) => {

@@ -17,11 +17,13 @@ export const queryKeys = {
   portfolioStats: (req: PortfolioRequest) => ['portfolio', 'stats', JSON.stringify(req)] as const,
   simulation: (req: SimulateRequest) => ['portfolio', 'simulate', JSON.stringify(req)] as const,
   retirement: (req: RetirementRequest | null) => ['retirement', req ? JSON.stringify(req) : ''] as const,
+  sentimentStatus: () => ['sentiment', 'status'] as const,
+  sentiment: (symbol: string) => ['sentiment', normaliseSymbol(symbol)] as const,
 }
 
-/** Never retry a client error (404 unknown symbol, 422 bad request, 429 rate limited). */
+/** Never retry a client error (404 unknown symbol, 422 bad request, 429 rate limited) or a 503 (feature off). */
 export function retryUnlessNotFound(failureCount: number, error: unknown): boolean {
-  if (error instanceof ApiError && (error.isNotFound || error.status === 422 || error.status === 429)) return false
+  if (error instanceof ApiError && (error.isNotFound || error.status === 422 || error.isRateLimited || error.isUnavailable)) return false
   return failureCount < 2
 }
 
@@ -135,5 +137,29 @@ export function useHistories(symbols: string[], period: Period = '1y', interval:
       staleTime: 5 * MINUTE,
       placeholderData: keepPreviousData,
     })),
+  })
+}
+
+/** Whether the API has an Anthropic key configured. Answered once per session. */
+export function useSentimentStatus() {
+  return useQuery({
+    queryKey: queryKeys.sentimentStatus(),
+    queryFn: ({ signal }) => api.sentimentStatus({ signal }),
+    staleTime: Infinity,
+  })
+}
+
+/**
+ * On-demand: the caller flips `enabled` when the user asks for an analysis, and the result is
+ * kept for the hour the API caches it. Never retried — every miss is a paid model call.
+ */
+export function useSentiment(symbol: string | null | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.sentiment(symbol ?? ''),
+    queryFn: ({ signal }) => api.sentiment(symbol!, { signal }),
+    enabled: Boolean(symbol) && enabled,
+    staleTime: HOUR,
+    gcTime: HOUR,
+    retry: false,
   })
 }

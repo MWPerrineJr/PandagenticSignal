@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { cryptoTopFixture, makeIndicators, makePortfolioStats, makeRetirement, makeSimulation, quoteFixtures, recommendationsFixture, searchFixtures } from './fixtures'
+import { cryptoTopFixture, makeIndicators, makePortfolioStats, makeRetirement, makeSentiment, makeSimulation, quoteFixtures, recommendationsFixture, searchFixtures } from './fixtures'
 import type { RetirementRequest } from '@/lib/api'
 
 import { API_URL } from '@/lib/api'
@@ -108,6 +108,14 @@ export const handlers = [
     const symbol = String(params.symbol).toUpperCase()
     if (!quoteFixtures[symbol]) return notFound(symbol)
     return HttpResponse.json({ ...recommendationsFixture, symbol })
+  }),
+
+  http.get(`${API_URL}/sentiment/status`, () => HttpResponse.json({ enabled: true, model: 'claude-test' })),
+
+  http.get(`${API_URL}/sentiment/:symbol`, ({ params }) => {
+    const symbol = String(params.symbol).toUpperCase()
+    if (!quoteFixtures[symbol]) return notFound(symbol)
+    return HttpResponse.json(makeSentiment(symbol))
   }),
 ]
 

@@ -5,12 +5,22 @@ from fastapi.responses import JSONResponse
 from app.errors import (
     InsufficientHistoryError,
     RateLimitedError,
+    SentimentDisabledError,
     TickerNotFoundError,
     UpstreamError,
 )
 from app.logging_config import access_log_middleware, configure_logging
 from app.ratelimit import RateLimiter
-from app.routers import crypto, history, portfolio, quotes, recommendations, retirement, search
+from app.routers import (
+    crypto,
+    history,
+    portfolio,
+    quotes,
+    recommendations,
+    retirement,
+    search,
+    sentiment,
+)
 from app.settings import Settings, get_settings
 
 
@@ -24,6 +34,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         overrides={
             "/portfolio/simulate": settings.simulate_rate_limit,
             "/retirement": settings.simulate_rate_limit,
+            "/sentiment": settings.sentiment_rate_limit,
         },
         enabled=settings.rate_limit_enabled,
     )
@@ -51,6 +62,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             status_code=503, content={"detail": str(exc)}, headers={"Retry-After": "30"}
         )
 
+    @app.exception_handler(SentimentDisabledError)
+    def _sentiment_disabled(_: Request, exc: SentimentDisabledError) -> JSONResponse:
+        return JSONResponse(status_code=503, content={"detail": str(exc)})
+
     @app.exception_handler(InsufficientHistoryError)
     def _insufficient(_: Request, exc: InsufficientHistoryError) -> JSONResponse:
         return JSONResponse(status_code=422, content={"detail": str(exc)})
@@ -71,6 +86,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         crypto.router,
         portfolio.router,
         retirement.router,
+        sentiment.router,
     )
     for r in routers:
         app.include_router(r)

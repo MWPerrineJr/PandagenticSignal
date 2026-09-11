@@ -5,6 +5,7 @@ import { WatchlistWidget, WatchlistWidgetSettings } from './watchlist-widget'
 import { AnalystWidget, AnalystWidgetSettings } from './analyst-widget'
 import { CryptoWidget, CryptoWidgetSettings } from './crypto-widget'
 import { PortfolioWidget, PortfolioWidgetSettings } from './portfolio-widget'
+import { SentimentWidget, SentimentWidgetSettings } from './sentiment-widget'
 
 // Chart-based widgets pull in lightweight-charts; load them on demand so the dashboard route
 // (the index page) does not carry the chart library in the main bundle.
@@ -100,6 +101,15 @@ export const WIDGET_REGISTRY: { [T in WidgetType]: WidgetDefinition<T> } = {
     Component: PortfolioWidget,
     Settings: PortfolioWidgetSettings,
     subtitle: (c) => (c.portfolioId ? undefined : 'active portfolio'),
+  },
+  sentiment: {
+    type: 'sentiment',
+    title: WIDGET_TITLES.sentiment,
+    description: 'AI read of recent news tone for one symbol',
+    size: WIDGET_SIZES.sentiment,
+    Component: SentimentWidget,
+    Settings: SentimentWidgetSettings,
+    subtitle: (c, a) => followOr(c.symbol, a),
   },
 }
 

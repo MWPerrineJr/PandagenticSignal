@@ -249,6 +249,15 @@ export class ApiError extends Error {
   get isNotFound(): boolean {
     return this.status === 404
   }
+
+  /** 503: the feature is switched off server-side (or an upstream is throttling us). */
+  get isUnavailable(): boolean {
+    return this.status === 503
+  }
+
+  get isRateLimited(): boolean {
+    return this.status === 429
+  }
 }
 
 async function readDetail(response: Response): Promise<string> {
@@ -290,6 +299,51 @@ export function postJson<T>(path: string, schema: z.ZodType<T>, body: unknown, i
   })
 }
 
+// -- AI news sentiment ---------------------------------------------------------------------
+
+export const SENTIMENTS = ['bullish', 'neutral', 'bearish'] as const
+export type Sentiment = (typeof SENTIMENTS)[number]
+const sentimentEnum = z.enum(SENTIMENTS)
+
+export const sentimentStatusSchema = z.object({
+  enabled: z.boolean(),
+  model: nullableString.optional(),
+})
+export type SentimentStatus = z.infer<typeof sentimentStatusSchema>
+
+export const sentimentReportSchema = z.object({
+  overall: sentimentEnum,
+  score: z.number(),
+  confidence: z.number(),
+  themes: z.array(z.string()),
+  articles: z.array(z.object({ index: z.number().int(), sentiment: sentimentEnum, rationale: z.string() })),
+  summary: z.string(),
+})
+export type SentimentReport = z.infer<typeof sentimentReportSchema>
+
+export const sentimentArticleSchema = z.object({
+  index: z.number().int(),
+  title: z.string(),
+  provider: nullableString.optional(),
+  published_at: nullableString.optional(),
+  url: nullableString.optional(),
+  sentiment: sentimentEnum.nullable().optional(),
+  rationale: nullableString.optional(),
+})
+export type SentimentArticle = z.infer<typeof sentimentArticleSchema>
+
+export const sentimentOutSchema = z.object({
+  symbol: z.string(),
+  generated_at: z.number(),
+  model: z.string(),
+  cached: z.boolean(),
+  news_count: z.number().int(),
+  report: sentimentReportSchema.nullable(),
+  articles: z.array(sentimentArticleSchema),
+  disclaimer: z.string(),
+})
+export type SentimentOut = z.infer<typeof sentimentOutSchema>
+
 export const normaliseSymbol = (symbol: string): string => symbol.trim().toUpperCase()
 
 export const api = {
@@ -309,4 +363,7 @@ export const api = {
   portfolioAnalyse: (body: PortfolioRequest, init?: RequestInit) => postJson(`/portfolio/analyse`, portfolioStatsSchema, body, init),
   portfolioSimulate: (body: SimulateRequest, init?: RequestInit) => postJson(`/portfolio/simulate`, simulationSchema, body, init),
   retirementProject: (body: RetirementRequest, init?: RequestInit) => postJson(`/retirement/project`, retirementOutSchema, body, init),
+  sentimentStatus: (init?: RequestInit) => apiFetch(`/sentiment/status`, sentimentStatusSchema, undefined, init),
+  sentiment: (symbol: string, init?: RequestInit) =>
+    apiFetch(`/sentiment/${encodeURIComponent(normaliseSymbol(symbol))}`, sentimentOutSchema, undefined, init),
 }
