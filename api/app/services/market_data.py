@@ -11,7 +11,12 @@ import pandas as pd
 import yfinance as yf
 from yfinance import exceptions as yf_exc
 
-from app.errors import RateLimitedError, TickerNotFoundError, UpstreamError
+from app.errors import (
+    InsufficientHistoryError,
+    RateLimitedError,
+    TickerNotFoundError,
+    UpstreamError,
+)
 from app.schemas import (
     Candle,
     CryptoTop,
@@ -24,6 +29,7 @@ from app.schemas import (
 from app.services.cache import Cache
 from app.services.convert import _int, _num, _price, _str
 from app.services.crypto import CryptoData
+from app.services.portfolio import InsufficientDataError, align_closes
 from app.settings import Settings, get_settings
 
 SEARCH_TYPES = {"EQUITY", "ETF", "CRYPTOCURRENCY"}
@@ -210,6 +216,26 @@ class MarketData:
         if df is None or df.empty:
             raise TickerNotFoundError(symbol)
         return df
+
+    def closes(self, symbols: list[str], period: str = "2y") -> pd.DataFrame:
+        """Aligned daily closes for several symbols (stocks and coins), one column each.
+
+        Indexes are normalised to calendar dates so Yahoo's exchange-local midnights and
+        Coinbase's UTC midnights line up; the join keeps only days every asset traded.
+        """
+        frames: dict[str, pd.Series] = {}
+        for raw in symbols:
+            symbol = normalise_ticker(raw)
+            df = self.history(symbol, period=period, interval="1d")
+            idx = pd.DatetimeIndex(df.index)
+            idx = idx.tz_convert("UTC") if idx.tz is not None else idx.tz_localize("UTC")
+            dates = idx.normalize().tz_localize(None)
+            close = pd.Series(df["Close"].to_numpy(dtype=float), index=dates)
+            frames[symbol] = close[~close.index.duplicated(keep="last")]
+        try:
+            return align_closes(frames)
+        except InsufficientDataError as exc:
+            raise InsufficientHistoryError(str(exc)) from exc
 
     # -- recommendations --------------------------------------------------------------------
 

@@ -12,6 +12,12 @@ export function formatPrice(value: number | null | undefined, currency = 'USD'):
   }
 }
 
+/** Unsigned percentage from a fraction, e.g. 0.152 -> "15.2%". */
+export function formatPercent(fraction: number | null | undefined, digits = 1): string {
+  if (fraction == null || !Number.isFinite(fraction)) return '—'
+  return `${(fraction * 100).toFixed(digits)}%`
+}
+
 /** Signed percentage, e.g. "+1.65%". */
 export function formatPct(pct: number | null | undefined): string {
   if (pct == null || !Number.isFinite(pct)) return '—'

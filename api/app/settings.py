@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     # Per-client rate limit (slowapi syntax), keyed by forwarded client IP.
     rate_limit: str = "120/minute"
     rate_limit_enabled: bool = True
+    # Tighter budget for the CPU-heavy simulation endpoints (same syntax, own window).
+    simulate_rate_limit: str = "30/minute"
 
     # "text" for local development, "json" for hosted logs.
     log_format: Literal["text", "json"] = "text"

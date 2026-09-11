@@ -1,6 +1,6 @@
 # Session Log — Stock Analysis Tool
 
-Last updated: 2026-09-11
+Last updated: 2026-09-11 (afternoon)
 
 ## Conversation summary
 
@@ -55,6 +55,8 @@ Last updated: 2026-09-11
 37. **Phase 8 (Crypto) built (2026-09-11).** API: `GET /crypto/top?limit=1..100` from `yf.screen("all_cryptocurrencies_us")` (cache ns `crypto_top`, TTL `crypto_ttl`=60 s), `SEARCH_TYPES` now includes `CRYPTOCURRENCY`, `Quote.quote_type` from `fast_info["quote_type"]`. Frontend: Crypto tab (top-25 table with 24h %, market cap, 24h volume, supply, 1M sparkline, star = track; coin detail = QuoteCard + 6M chart), `crypto` dashboard widget (top-N rows), "Crypto" badge in search results, quote card says "Crypto · USD", "Volume (24h)" and "24h range" for coins, `formatPrice` keeps 4–6 decimals under $1, `formatPct` added, shadcn `table` primitive installed. Verified live locally: `/crypto/top?limit=3` (BTC, ETH, USDT), `/search?q=bitcoin` (BTC-USD tagged CRYPTOCURRENCY), `/quote/BTC-USD` (`quote_type` set; note `fast_info` market cap is null for coins, the screener has it). Tests: API 76 passed (99% coverage), frontend 144 tests / 25 files, e2e spec gained a Crypto test.
 
 38. **Crypto data moved to Coinbase + CoinGecko (2026-09-11, user's choice).** The user asked for Coinbase's free API; it has no market cap/supply, so the user picked "Coinbase + CoinGecko for ranking". New `api/app/services/crypto.py` (`CryptoData`): **Coinbase** Advanced Trade public market endpoints (no key, ~10 req/s) for prices, 24 h change/volume/range and OHLCV candles; **CoinGecko** `/coins/markets` (no key; optional `STOCK_API_COINGECKO_API_KEY` demo key raises its limit) for the market-cap ranking, market cap, circulating supply, names and icons. `MarketData.quote()`/`history()` route any `X-USD` symbol that is an online Coinbase USD spot product to Coinbase (so charts, indicators, sparklines and watchlist quotes for coins are Coinbase too); anything else, or Coinbase being unreachable, falls back to Yahoo as before. Design facts: one cached Coinbase `/products` list (1.2 MB, 402 USD pairs, TTL `crypto_ttl`=60 s) serves membership checks and every coin quote (no per-coin calls); candles are paged backwards in chunks of 300 (Coinbase rejects ≥350) with at most 12 requests (most recent window wins), weekly/monthly are resampled from daily; year high/low for a coin comes from its cached 1y daily candles; `CryptoData` has its own `Cache` so its lock never serialises yfinance calls; the HTTP fetcher is injectable (`tests/fakes.py::FakeFetch`), `make_fetcher` maps 404→`NotFound`, 429→503, other 4xx/5xx/network→502. `CryptoQuote` gained `rank`, `icon`, `high_24h`, `low_24h`, `price_source` ("coinbase" | "coingecko"; the table marks CoinGecko-priced coins with "· CG"). `httpx` is now an explicit dependency; scalar helpers moved to `services/convert.py`. Verified live locally: top 4 (BTC, ETH, USDT, BNB all priced by Coinbase), `/quote/BTC-USD` exchange "Coinbase" with 24 h + 52-week ranges and market cap, `/history/BTC-USD` 1mo/1d = 30 candles, 5y/1wk = 261, 1d/5m = 288, `/indicators/ETH-USD` 200, unknown coin 404, AAPL untouched. Tests: API 101 passed (new `test_crypto.py`), frontend updated for the new fields.
+
+39. **Phase 9 (Portfolio builder + Monte Carlo) built (2026-09-11).** Engine `api/app/services/portfolio.py` (pure numpy/pandas): `align_closes` (inner join on calendar dates, ≥30 rows else `InsufficientDataError`), `log_returns`, `shrink_covariance` (toward the diagonal, on by default above 5 assets), `portfolio_stats` (annual return/vol, Sharpe rf 0, max drawdown, per-asset stats, correlation), `choose_step` (daily ≤2y, weekly ≤10y, monthly beyond), `simulate_portfolio` (Cholesky with eigen-clip fallback, rebalanced each step, cashflow per step, floored at 0), `simulate_parametric` (single-asset GBM for Phase 10; `mu_annual` compounds exactly as `(1+mu)^T` at zero vol), `downsample_indices`, `summarise_paths` (≤260 samples, p5/25/50/75/95 bands, terminal mean/median/percentiles, `prob_loss`, VaR/CVaR 95 against money put in). `MarketData.closes()` normalises Yahoo's exchange-local and Coinbase's UTC midnights to dates before joining. API: `POST /portfolio/analyse` and `POST /portfolio/simulate` (`api/app/routers/portfolio.py`; `Holding` = weight xor amount, one mode per request, 1..20 unique symbols, period 1y/2y/5y, horizon 1..40, sims 100..10000, optional seed), 422 for thin history (`InsufficientHistoryError`), CORS now allows POST, `RateLimiter` gained per-prefix overrides with separate windows (`/portfolio/simulate` → `STOCK_API_SIMULATE_RATE_LIMIT`, default 30/minute, added to `render.yaml`). Live: 40y × 10k sims × 5 assets = 0.9 s. Frontend: `src/lib/portfolio.ts` (model, `mode` weight|amount, storage rows = API rows), `postJson`, `usePortfolioStats`/`useSimulation` (simulation runs only on "Run"; a changed portfolio hides the stale fan), retry now also stops on 422/429, `src/stores/portfolios.ts` + `portfolio-repo.ts` + `use-portfolios.ts` (local/cloud, 1 s debounced save, seeds a new account from the local active portfolio), Portfolio tab (`src/features/portfolio/`: picker, holdings editor with weight/amount toggle + Normalise, KPI cards, SVG correlation heatmap, simulation controls, SVG fan chart with table view, terminal stats), `portfolio` dashboard widget. Supabase: `public.portfolios` (migration `20260911120000_portfolios.sql`, applied to stock-tool-dev via MCP; RLS owner policies; pgTAP `supabase/tests/0002_portfolios.test.sql`, not yet run). Advisors: only the pre-existing "leaked password protection disabled" auth warning. Tests: API 123 passed (99% coverage), frontend 166 tests / 31 files, e2e portfolio + crypto 2/2 locally (they fail if run concurrently with the build — CPU starvation, not a bug). Polish noted: uncontrolled number inputs (shadcn Button swallows `type=submit`, so Run reads the form via a ref).
 
 ## Repository state
 
@@ -208,7 +210,15 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] Frontend: Crypto tab (`src/features/crypto/`), `crypto` widget, search badge, quote-card labels, `formatPrice`/`formatPct`
 - [x] Tests: `crypto-page.test.tsx` (6), `crypto-widget.test.tsx` (3), `format.test.ts`, api client tests; e2e "crypto tab" test
 - [x] Checkpoint part 1: committed + pushed as `f142edf`, CI green, crypto e2e test 1/1 locally against the dev servers; Coinbase/CoinGecko switch committed after that (see git log)
-- [ ] Checkpoint part 2 (**needs the user**): Render did not auto-deploy within 15 min (still serving 0.2.0 without `/crypto/top`) → Manual Deploy → "Deploy latest commit"; then Lovable → Publish → Update so pandagenticsignal.com gets the Crypto tab; then verify `curl https://stock-tool-api-qg9s.onrender.com/crypto/top?limit=3` and `E2E_BASE_URL=https://pandagenticsignal.com npx playwright test` (expect 4/4)
+- [ ] Checkpoint part 2 (**needs the user**): Render did not auto-deploy within 15 min (still serving 0.2.0 without `/crypto/top`) → Manual Deploy → "Deploy latest commit"; then Lovable → Publish → Update so pandagenticsignal.com gets the Crypto tab; then verify `curl https://stock-tool-api-qg9s.onrender.com/crypto/top?limit=3` and `E2E_BASE_URL=https://pandagenticsignal.com npx playwright test` (expect 5/5 once Phase 9 is deployed too)
+
+### Phase 9 — Portfolio builder + Monte Carlo
+- [x] Engine `services/portfolio.py` + 16 unit tests; `MarketData.closes()`
+- [x] API: `POST /portfolio/analyse|simulate`, POST CORS, per-prefix rate limit, 422 error; router/hardening/market_data tests
+- [x] Frontend: model, client, queries, store/repo/hook (local + cloud), Portfolio tab, widget; 35 new tests
+- [x] Supabase `portfolios` table applied to stock-tool-dev (MCP) + migration file + pgTAP file
+- [x] e2e "portfolio tab" test, 2/2 locally with the crypto test
+- [ ] Deploy (**needs the user**): Render Manual Deploy **and** blueprint Manual sync + Approve for the new `STOCK_API_SIMULATE_RATE_LIMIT` key; Lovable Publish → Update; then `curl -X POST .../portfolio/analyse` from the site passes CORS and Playwright 5/5 against pandagenticsignal.com
 
 ## Notes for later phases
 
@@ -236,10 +246,11 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 
 **Where things stand (2026-09-11):** Phases 0–7 closed and live; Phase 8 (Crypto) built and tested
 locally (see note 37 and the Phase 8 checklist for the deploy checkpoint status).
-**Next: Phase 9 (Portfolio builder + Monte Carlo)** from the "Expansion plan" section at the bottom of
-this file. Pull first (`git pull`), then follow the phase's engine → API → frontend → tests → checkpoint order.
+Phase 9 (Portfolio + Monte Carlo) is built and tested locally too (note 39).
+**Next: Phase 10 (Retirement)** from the "Expansion plan" section at the bottom of this file; it reuses
+`simulate_parametric`, `summarise_paths` and `FanChart` (`title` prop) from Phase 9. Pull first (`git pull`).
 **Before anything else on this Mac:** `find . -type f -flags +dataless | wc -l` must be 0 (note 36).
-**Two clicks pending from the user before Phase 9's checkpoint:** Render Manual Deploy of `f142edf`, and Lovable Publish → Update (Phase 8 checklist, part 2).
+**Pending from the user:** Render Manual Deploy of the latest commit **plus** blueprint Manual sync + Approve (new env key `STOCK_API_SIMULATE_RATE_LIMIT`), and Lovable Publish → Update (Phase 8/9 checklists).
 
 **Live pieces:**
 - Site: https://pandagenticsignal.com (Lovable-published, custom domain; www redirects). Lovable project

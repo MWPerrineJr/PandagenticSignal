@@ -41,6 +41,35 @@ def test_rate_limit_headers_on_allowed_requests(make_client) -> None:
     assert int(r.headers["x-ratelimit-reset"]) <= 60
 
 
+def test_simulate_has_its_own_rate_limit_window(make_client) -> None:
+    client = make_client(rate_limit="10/minute", simulate_rate_limit="1/minute")
+    body = {"holdings": [{"symbol": "AAPL", "weight": 1}], "n_sims": 100, "horizon_years": 1}
+    first = client.post("/portfolio/simulate", json=body)
+    assert first.status_code == 200
+    assert first.headers["x-ratelimit-limit"] == "1"
+    second = client.post("/portfolio/simulate", json=body)
+    assert second.status_code == 429
+    assert "1 per 1 minute" in second.json()["detail"]
+    # The default budget is untouched by simulate hits, and analyse uses the default rule.
+    r = client.get("/quote/AAPL")
+    assert r.status_code == 200 and r.headers["x-ratelimit-remaining"] == "9"
+    assert client.post("/portfolio/analyse", json=body).status_code == 200
+
+
+def test_cors_preflight_allows_post(make_client) -> None:
+    client = make_client(cors_origins="https://app.example.com")
+    r = client.options(
+        "/portfolio/simulate",
+        headers={
+            "Origin": "https://app.example.com",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert r.status_code == 200
+    assert "POST" in r.headers["access-control-allow-methods"]
+
+
 def test_health_is_exempt_from_rate_limit(make_client) -> None:
     client = make_client(rate_limit="1/minute")
     for _ in range(5):

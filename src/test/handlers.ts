@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { cryptoTopFixture, makeIndicators, quoteFixtures, recommendationsFixture, searchFixtures } from './fixtures'
+import { cryptoTopFixture, makeIndicators, makePortfolioStats, makeSimulation, quoteFixtures, recommendationsFixture, searchFixtures } from './fixtures'
 
 import { API_URL } from '@/lib/api'
 
@@ -62,9 +62,51 @@ export const handlers = [
     return HttpResponse.json({ ...cryptoTopFixture, coins: cryptoTopFixture.coins.slice(0, limit) })
   }),
 
+  http.post(`${API_URL}/portfolio/analyse`, async ({ request }) => {
+    const body = (await request.json()) as { holdings: Array<{ symbol: string; weight?: number; amount?: number }>; period?: string }
+    return portfolioResponse(body) ?? HttpResponse.json(makePortfolioStats(...portfolioInputs(body)))
+  }),
+
+  http.post(`${API_URL}/portfolio/simulate`, async ({ request }) => {
+    const body = (await request.json()) as {
+      holdings: Array<{ symbol: string; weight?: number; amount?: number }>
+      period?: string
+      horizon_years?: number
+      n_sims?: number
+      initial_value?: number
+      monthly_contribution?: number
+    }
+    const bad = portfolioResponse(body)
+    if (bad) return bad
+    const stats = makePortfolioStats(...portfolioInputs(body))
+    return HttpResponse.json(
+      makeSimulation(stats, {
+        horizon_years: body.horizon_years ?? 10,
+        n_sims: body.n_sims ?? 2000,
+        initial_value: body.initial_value ?? 10_000,
+        monthly_contribution: body.monthly_contribution ?? 0,
+      }),
+    )
+  }),
+
   http.get(`${API_URL}/recommendations/:symbol`, ({ params }) => {
     const symbol = String(params.symbol).toUpperCase()
     if (!quoteFixtures[symbol]) return notFound(symbol)
     return HttpResponse.json({ ...recommendationsFixture, symbol })
   }),
 ]
+
+type PortfolioBody = { holdings: Array<{ symbol: string; weight?: number; amount?: number }>; period?: string }
+
+/** 422 for an empty/oversized set, 404 for a symbol without a fixture, else null. */
+function portfolioResponse(body: PortfolioBody) {
+  if (!body.holdings?.length || body.holdings.length > 20) return HttpResponse.json({ detail: 'holdings: 1..20 required' }, { status: 422 })
+  const unknown = body.holdings.find((h) => !quoteFixtures[h.symbol.toUpperCase()])
+  return unknown ? notFound(unknown.symbol.toUpperCase()) : null
+}
+
+function portfolioInputs(body: PortfolioBody): [string[], number[], string] {
+  const values = body.holdings.map((h) => h.weight ?? h.amount ?? 0)
+  const total = values.reduce((s, v) => s + v, 0) || 1
+  return [body.holdings.map((h) => h.symbol.toUpperCase()), values.map((v) => v / total), body.period ?? '2y']
+}

@@ -19,3 +19,7 @@ class UpstreamError(MarketDataError):
 
 class RateLimitedError(MarketDataError):
     """Yahoo Finance is rate-limiting us (HTTP 503)."""
+
+
+class InsufficientHistoryError(MarketDataError):
+    """The requested symbols share too little price history to analyse (HTTP 422)."""

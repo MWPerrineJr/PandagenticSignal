@@ -77,6 +77,27 @@ describe('api client', () => {
     expect(typeof top.as_of).toBe('number')
   })
 
+  it('posts portfolio requests as JSON and parses the analytics', async () => {
+    const stats = await api.portfolioAnalyse({ holdings: [{ symbol: 'aapl', weight: 3 }, { symbol: 'BTC-USD', weight: 1 }], period: '1y' })
+    expect(stats.symbols).toEqual(['AAPL', 'BTC-USD'])
+    expect(stats.weights).toEqual([0.75, 0.25])
+    expect(stats.correlation).toHaveLength(2)
+    const sim = await api.portfolioSimulate({
+      holdings: [{ symbol: 'AAPL', amount: 100 }],
+      period: '2y',
+      horizon_years: 5,
+      n_sims: 500,
+      initial_value: 1000,
+      monthly_contribution: 50,
+    })
+    expect(sim.times[0]).toBe(0)
+    expect(sim.times.at(-1)).toBe(5)
+    expect(sim.bands.p50?.[0]).toBe(1000)
+    expect(sim.stats.symbols).toEqual(['AAPL'])
+    await expect(api.portfolioAnalyse({ holdings: [], period: '2y' })).rejects.toMatchObject({ status: 422 })
+    await expect(api.portfolioAnalyse({ holdings: [{ symbol: 'NOPE', weight: 1 }], period: '2y' })).rejects.toMatchObject({ status: 404 })
+  })
+
   it('flags crypto quotes by quote_type', async () => {
     expect(isCryptoQuote(await api.quote('BTC-USD'))).toBe(true)
     expect(isCryptoQuote(await api.quote('AAPL'))).toBe(false)

@@ -1,4 +1,4 @@
-import type { CryptoTop, Indicators, Quote, Recommendations, SearchResult } from '@/lib/api'
+import type { CryptoTop, Indicators, PortfolioStats, Quote, Recommendations, SearchResult, Simulation } from '@/lib/api'
 
 export const searchFixtures: Record<string, SearchResult[]> = {
   apple: [
@@ -128,4 +128,55 @@ export const recommendationsFixture: Recommendations = {
       prior_price_target: 360,
     },
   ],
+}
+
+/** Deterministic analytics for any symbol set: return grows with the index, vol with 2x. */
+export function makePortfolioStats(symbols: string[], weights: number[], period = '2y'): PortfolioStats {
+  const assets = symbols.map((symbol, i) => ({ symbol, weight: weights[i]!, annual_return: 0.08 + i * 0.02, annual_vol: 0.2 + i * 0.05 }))
+  const annual_return = assets.reduce((s, a) => s + a.weight * a.annual_return, 0)
+  const annual_vol = assets.reduce((s, a) => s + a.weight * a.annual_vol, 0) * 0.8
+  return {
+    symbols,
+    weights,
+    period,
+    start: '2024-09-11',
+    end: '2026-09-10',
+    n_obs: 500,
+    annual_return,
+    annual_vol,
+    sharpe: annual_vol > 0 ? annual_return / annual_vol : 0,
+    max_drawdown: -0.25,
+    assets,
+    correlation: symbols.map((_, i) => symbols.map((__, j) => (i === j ? 1 : 0.3))),
+  }
+}
+
+export function makeSimulation(stats: PortfolioStats, req: { horizon_years: number; n_sims: number; initial_value: number; monthly_contribution: number }): Simulation {
+  const points = 11
+  const times = Array.from({ length: points }, (_, i) => (i / (points - 1)) * req.horizon_years)
+  const band = (k: number) => times.map((t) => req.initial_value * Math.exp((stats.annual_return + k * stats.annual_vol) * t) + req.monthly_contribution * 12 * t)
+  const bands = { p5: band(-1.5), p25: band(-0.6), p50: band(0), p75: band(0.6), p95: band(1.5) }
+  const baseline = req.initial_value + req.monthly_contribution * 12 * req.horizon_years
+  const p5 = bands.p5.at(-1)!
+  return {
+    initial_value: req.initial_value,
+    horizon_years: req.horizon_years,
+    steps_per_year: req.horizon_years <= 2 ? 252 : req.horizon_years <= 10 ? 52 : 12,
+    n_sims: req.n_sims,
+    times,
+    bands,
+    terminal: {
+      mean: bands.p50.at(-1)! * 1.05,
+      median: bands.p50.at(-1)!,
+      p5,
+      p25: bands.p25.at(-1)!,
+      p75: bands.p75.at(-1)!,
+      p95: bands.p95.at(-1)!,
+      prob_loss: 0.12,
+      var_95: Math.max(0, baseline - p5),
+      var_95_pct: Math.max(0, baseline - p5) / baseline,
+      cvar_95: Math.max(0, baseline - p5) * 1.2,
+    },
+    stats,
+  }
 }

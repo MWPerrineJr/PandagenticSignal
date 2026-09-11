@@ -66,7 +66,7 @@ export function MarketTable({ coins, activeSymbol, onSelect }: MarketTableProps)
                 <TableCell className="hidden text-right tabular-nums md:table-cell">{formatCompact(coin.volume)}</TableCell>
                 <TableCell className="hidden text-right tabular-nums lg:table-cell">{formatCompact(coin.circulating_supply)}</TableCell>
                 <TableCell className="hidden py-1 sm:table-cell">
-                  <Sparkline symbol={coin.symbol} />
+                  {coin.price_source !== 'coingecko' && <Sparkline symbol={coin.symbol} />}
                 </TableCell>
                 <TableCell className="py-1">
                   <Button

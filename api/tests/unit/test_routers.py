@@ -151,6 +151,68 @@ def test_crypto_top_upstream_failure_is_502(client: TestClient, fake_fetch: Fake
     assert client.get("/crypto/top", params={"limit": 7}).status_code == 503
 
 
+def test_portfolio_analyse(client: TestClient) -> None:
+    body = {"holdings": [{"symbol": "aapl", "weight": 3}, {"symbol": "BTC-USD", "weight": 1}]}
+    r = client.post("/portfolio/analyse", json=body)
+    assert r.status_code == 200, r.text
+    out = r.json()
+    assert out["symbols"] == ["AAPL", "BTC-USD"]
+    assert out["weights"] == [0.75, 0.25]
+    assert out["period"] == "2y" and out["n_obs"] >= 20
+    assert out["start"] < out["end"]
+    assert len(out["correlation"]) == 2 and out["correlation"][0][0] == 1.0
+    assert [a["symbol"] for a in out["assets"]] == ["AAPL", "BTC-USD"]
+    assert -1 <= out["max_drawdown"] <= 0
+    amounts = {"holdings": [{"symbol": "AAPL", "amount": 500}, {"symbol": "MSFT", "amount": 1500}]}
+    assert client.post("/portfolio/analyse", json=amounts).json()["weights"] == [0.25, 0.75]
+
+
+def test_portfolio_validation(client: TestClient) -> None:
+    def post(holdings, **extra) -> int:
+        return client.post("/portfolio/simulate", json={"holdings": holdings, **extra}).status_code
+
+    assert post([]) == 422
+    assert post([{"symbol": f"S{i}", "weight": 1} for i in range(21)]) == 422
+    assert post([{"symbol": "AAPL", "weight": 1}, {"symbol": "MSFT", "amount": 1}]) == 422
+    assert post([{"symbol": "AAPL", "weight": 1, "amount": 1}]) == 422
+    assert post([{"symbol": "AAPL"}]) == 422
+    assert post([{"symbol": "AAPL", "weight": 1}, {"symbol": "aapl", "weight": 1}]) == 422
+    assert post([{"symbol": "AAPL", "weight": 1}], n_sims=20_000) == 422
+    assert post([{"symbol": "AAPL", "weight": 1}], horizon_years=0) == 422
+    assert post([{"symbol": "AAPL", "weight": 1}], period="3mo") == 422
+    assert (
+        client.post(
+            "/portfolio/analyse", json={"holdings": [{"symbol": "NOPE", "weight": 1}]}
+        ).status_code
+        == 404
+    )
+
+
+def test_portfolio_simulate_is_seeded_and_shaped(client: TestClient) -> None:
+    body = {
+        "holdings": [{"symbol": "AAPL", "weight": 1}, {"symbol": "MSFT", "weight": 1}],
+        "period": "1y",
+        "horizon_years": 5,
+        "n_sims": 200,
+        "initial_value": 1000,
+        "monthly_contribution": 100,
+        "seed": 42,
+    }
+    a = client.post("/portfolio/simulate", json=body)
+    assert a.status_code == 200, a.text
+    out = a.json()
+    assert out["steps_per_year"] == 52 and out["horizon_years"] == 5 and out["n_sims"] == 200
+    assert len(out["times"]) <= 260 and out["times"][-1] == 5.0
+    assert set(out["bands"]) == {"p5", "p25", "p50", "p75", "p95"}
+    assert len(out["bands"]["p50"]) == len(out["times"])
+    assert out["bands"]["p50"][0] == 1000
+    t = out["terminal"]
+    assert {"mean", "median", "p5", "p95", "prob_loss", "var_95", "var_95_pct", "cvar_95"} <= set(t)
+    assert out["stats"]["symbols"] == ["AAPL", "MSFT"]
+    assert client.post("/portfolio/simulate", json=body).json() == out  # same seed, same paths
+    assert client.post("/portfolio/simulate", json={**body, "seed": 43}).json() != out
+
+
 def test_cors_allows_dev_origin(client: TestClient) -> None:
     r = client.get("/health", headers={"Origin": "http://localhost:5173"})
     assert r.headers.get("access-control-allow-origin") == "http://localhost:5173"

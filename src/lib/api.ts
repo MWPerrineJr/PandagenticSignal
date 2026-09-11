@@ -146,6 +146,54 @@ export const recommendationsSchema = z.object({
 })
 export type Recommendations = z.infer<typeof recommendationsSchema>
 
+export const PORTFOLIO_REQUEST_PERIODS = ['1y', '2y', '5y'] as const
+export type RequestHolding = { symbol: string; weight: number } | { symbol: string; amount: number }
+export interface PortfolioRequest {
+  holdings: RequestHolding[]
+  period: (typeof PORTFOLIO_REQUEST_PERIODS)[number]
+}
+export interface SimulateRequest extends PortfolioRequest {
+  horizon_years: number
+  n_sims: number
+  initial_value: number
+  monthly_contribution: number
+  seed?: number
+}
+
+export const assetStatsSchema = z.object({
+  symbol: z.string(),
+  weight: z.number(),
+  annual_return: z.number(),
+  annual_vol: z.number(),
+})
+export const portfolioStatsSchema = z.object({
+  symbols: z.array(z.string()),
+  weights: z.array(z.number()),
+  period: z.string(),
+  start: z.string(),
+  end: z.string(),
+  n_obs: z.number().int(),
+  annual_return: z.number(),
+  annual_vol: z.number(),
+  sharpe: z.number(),
+  max_drawdown: z.number(),
+  assets: z.array(assetStatsSchema),
+  correlation: z.array(z.array(z.number())),
+})
+export type PortfolioStats = z.infer<typeof portfolioStatsSchema>
+
+export const simulationSchema = z.object({
+  initial_value: z.number(),
+  horizon_years: z.number(),
+  steps_per_year: z.number().int(),
+  n_sims: z.number().int(),
+  times: z.array(z.number()),
+  bands: z.record(z.string(), z.array(z.number())),
+  terminal: z.record(z.string(), z.number()),
+  stats: portfolioStatsSchema,
+})
+export type Simulation = z.infer<typeof simulationSchema>
+
 export class ApiError extends Error {
   readonly status: number
 
@@ -189,6 +237,16 @@ export async function apiFetch<T>(
   return schema.parse(await response.json())
 }
 
+/** POST a JSON body; errors and parsing behave exactly like `apiFetch`. */
+export function postJson<T>(path: string, schema: z.ZodType<T>, body: unknown, init?: RequestInit): Promise<T> {
+  return apiFetch(path, schema, undefined, {
+    ...init,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    body: JSON.stringify(body),
+  })
+}
+
 export const normaliseSymbol = (symbol: string): string => symbol.trim().toUpperCase()
 
 export const api = {
@@ -205,4 +263,6 @@ export const api = {
   recommendations: (symbol: string, init?: RequestInit) =>
     apiFetch(`/recommendations/${encodeURIComponent(normaliseSymbol(symbol))}`, recommendationsSchema, undefined, init),
   cryptoTop: (limit = 25, init?: RequestInit) => apiFetch(`/crypto/top`, cryptoTopSchema, { limit }, init),
+  portfolioAnalyse: (body: PortfolioRequest, init?: RequestInit) => postJson(`/portfolio/analyse`, portfolioStatsSchema, body, init),
+  portfolioSimulate: (body: SimulateRequest, init?: RequestInit) => postJson(`/portfolio/simulate`, simulationSchema, body, init),
 }

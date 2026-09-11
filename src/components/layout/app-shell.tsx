@@ -12,6 +12,7 @@ export const NAV_ITEMS = [
   { to: '/watchlist', label: 'Watchlist' },
   { to: '/analysts', label: 'Analysts' },
   { to: '/crypto', label: 'Crypto' },
+  { to: '/portfolio', label: 'Portfolio' },
 ] as const
 
 export function AppShell() {

@@ -4,6 +4,7 @@ import { QuoteWidget, QuoteWidgetSettings } from './quote-widget'
 import { WatchlistWidget, WatchlistWidgetSettings } from './watchlist-widget'
 import { AnalystWidget, AnalystWidgetSettings } from './analyst-widget'
 import { CryptoWidget, CryptoWidgetSettings } from './crypto-widget'
+import { PortfolioWidget, PortfolioWidgetSettings } from './portfolio-widget'
 
 // Chart-based widgets pull in lightweight-charts; load them on demand so the dashboard route
 // (the index page) does not carry the chart library in the main bundle.
@@ -90,6 +91,15 @@ export const WIDGET_REGISTRY: { [T in WidgetType]: WidgetDefinition<T> } = {
     Component: CryptoWidget,
     Settings: CryptoWidgetSettings,
     subtitle: (c) => `top ${c.limit}`,
+  },
+  portfolio: {
+    type: 'portfolio',
+    title: WIDGET_TITLES.portfolio,
+    description: 'Holdings and risk/return of a saved portfolio',
+    size: WIDGET_SIZES.portfolio,
+    Component: PortfolioWidget,
+    Settings: PortfolioWidgetSettings,
+    subtitle: (c) => (c.portfolioId ? undefined : 'active portfolio'),
   },
 }
 

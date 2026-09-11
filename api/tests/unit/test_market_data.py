@@ -1,8 +1,15 @@
 import pandas as pd
 import pytest
 
-from app.errors import RateLimitedError, TickerNotFoundError, UpstreamError
+from app.errors import (
+    InsufficientHistoryError,
+    RateLimitedError,
+    TickerNotFoundError,
+    UpstreamError,
+)
+from app.services.cache import Cache
 from app.services.market_data import MarketData, frame_to_candles, normalise_ticker
+from app.settings import Settings
 from tests.fakes import FakeFetch, FakeTicker, FakeYF, make_ohlc
 
 
@@ -106,6 +113,29 @@ def test_quotes_batch_dedupes_and_reports_missing(market_data: MarketData) -> No
     found, missing = market_data.quotes(["aapl", "AAPL", "msft", "", "nope"])
     assert [q.symbol for q in found] == ["AAPL", "MSFT"]
     assert missing == ["NOPE"]
+
+
+# -- closes ---------------------------------------------------------------------------------
+
+
+def test_closes_aligns_stock_and_coin_on_dates(market_data: MarketData) -> None:
+    df = market_data.closes(["aapl", "BTC-USD"], period="1y")
+    assert list(df.columns) == ["AAPL", "BTC-USD"]
+    assert df.index.tz is None and df.index.is_monotonic_increasing
+    assert 25 <= len(df) <= 30  # the fake stock frame has 30 weekdays; the coin covers them
+    assert df.notna().all().all()
+
+
+def test_closes_unknown_symbol_and_too_little_overlap(market_data: MarketData) -> None:
+    with pytest.raises(TickerNotFoundError):
+        market_data.closes(["AAPL", "NOPE"])
+    with pytest.raises(InsufficientHistoryError):
+        MarketData(
+            cache=Cache(),
+            settings=Settings(),
+            yfinance_module=FakeYF(history_rows=10),
+            crypto=market_data.crypto,
+        ).closes(["AAPL", "MSFT"])
 
 
 # -- error translation ---------------------------------------------------------------------

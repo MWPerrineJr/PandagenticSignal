@@ -13,9 +13,10 @@ Browser ──► React app (repo root: Vite + TS + Tailwind + shadcn/ui)   ← 
                 │
                 ├──► FastAPI + yfinance service (api/)                ← Docker on Render/Railway
                 │      /search /quote /quotes /history /indicators /recommendations
+                │      /crypto/top  POST /portfolio/analyse  POST /portfolio/simulate
                 │      in-process cache, per-IP rate limit, JSON logs
                 │
-                └──► Supabase (auth, watchlists, dashboard layouts)   ← supabase/migrations, RLS
+                └──► Supabase (auth, watchlists, dashboards, portfolios) ← supabase/migrations, RLS
 ```
 
 The frontend lives at the repository root because Lovable's GitHub import expects a Vite
@@ -71,7 +72,7 @@ the Render dashboard:
 | `STOCK_API_CORS_ORIGINS` | comma-separated exact browser origins; `render.yaml` sets the custom domain `https://pandagenticsignal.com` (+ `www`) and local dev |
 | `STOCK_API_CORS_ORIGIN_REGEX` | optional; `https://.*\.lovable\.app` allows every Lovable preview and published subdomain (set in `render.yaml`) |
 
-Optional: `STOCK_API_RATE_LIMIT` (default `120/minute` per client IP), `STOCK_API_LOG_LEVEL`.
+Optional: `STOCK_API_RATE_LIMIT` (default `120/minute` per client IP), `STOCK_API_SIMULATE_RATE_LIMIT` (default `30/minute`, its own window for `POST /portfolio/simulate`), `STOCK_API_COINGECKO_API_KEY` (free demo key, raises CoinGecko's public limit), `STOCK_API_LOG_LEVEL`.
 The free plan spins down after ~15 min idle (first request then takes ~30 s); the Starter plan
 keeps it warm. Railway works the same way: create a service from the repo, set the root
 directory to `api`, and add the same variables. Both inject `PORT`, which the image honours.
@@ -127,5 +128,8 @@ Lovable has no env-var UI, so this file is what its builds use. For local work p
 `.env.local` (gitignored), typically `VITE_API_URL=http://localhost:8000`; leave the Supabase pair
 blank there to run without accounts. `VITE_SUPABASE_PUBLISHABLE_KEY` (the name Lovable's Supabase
 connector writes) is accepted as an alias.
-API (`api/.env`, prefix `STOCK_API_`): `CORS_ORIGINS`, `CORS_ORIGIN_REGEX`, `RATE_LIMIT`,
-`RATE_LIMIT_ENABLED`, `LOG_FORMAT` (`text`|`json`), `LOG_LEVEL`, cache TTLs (see `api/app/settings.py`).
+API (`api/.env`, prefix `STOCK_API_`): `CORS_ORIGINS`, `CORS_ORIGIN_REGEX`, `RATE_LIMIT`, `SIMULATE_RATE_LIMIT`,
+`RATE_LIMIT_ENABLED`, `LOG_FORMAT` (`text`|`json`), `LOG_LEVEL`, `COINGECKO_API_KEY` (optional), cache TTLs (see `api/app/settings.py`).
+
+Data sources: Yahoo Finance via yfinance for stocks, ETFs and search; Coinbase's public market API for
+crypto prices and candles; CoinGecko's public API for the crypto market-cap ranking. All keyless.

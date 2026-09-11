@@ -77,6 +77,33 @@ test.describe('smoke (live data, signed out)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('ETH-USD')
   })
 
+  test('portfolio tab: holdings persist, stats render, simulation draws the fan', async ({ page }) => {
+    await page.goto('/portfolio')
+    await expect(page.getByRole('heading', { level: 1, name: 'Portfolio' })).toBeVisible()
+    const add = page.getByRole('combobox', { name: 'Add a holding' })
+    await add.fill('apple')
+    await page.getByRole('option', { name: /^AAPL\b/ }).first().click()
+    await expect(page.getByTestId('holding-AAPL')).toBeVisible()
+    await add.fill('bitcoin')
+    await page.getByRole('option', { name: /^BTC-USD\b/ }).first().click()
+    await expect(page.getByTestId('holding-BTC-USD')).toBeVisible()
+
+    const cards = page.getByTestId('stats-cards')
+    await expect(cards).toContainText(/Annual return/)
+    await expect(cards.getByText(/^-?\d+\.\d%$/).first()).toBeVisible()
+    await expect(page.getByRole('figure', { name: /return correlation/i })).toBeVisible()
+
+    await page.getByRole('button', { name: /run simulation/i }).click()
+    await expect(page.getByRole('figure', { name: /simulated wealth over 10 years/i })).toBeVisible({ timeout: 60_000 })
+    await expect(page.getByTestId('terminal-stats')).toContainText('Median outcome')
+
+    // Holdings survive a reload (browser persistence when signed out).
+    await page.waitForTimeout(1500)
+    await page.reload()
+    await expect(page.getByTestId('holding-AAPL')).toBeVisible()
+    await expect(page.getByTestId('holding-BTC-USD')).toBeVisible()
+  })
+
   test('unknown symbol shows a friendly error, not a crash', async ({ page }) => {
     await page.goto('/?t=ZZZZNOTREAL')
     await expect(page.getByRole('alert').filter({ hasText: /no data for ZZZZNOTREAL/i })).toBeVisible()

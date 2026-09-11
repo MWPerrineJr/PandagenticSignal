@@ -1,5 +1,5 @@
 import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query'
-import { ApiError, api, normaliseSymbol, type Interval, type Period } from './api'
+import { ApiError, api, normaliseSymbol, type Interval, type Period, type PortfolioRequest, type SimulateRequest } from './api'
 
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
@@ -14,11 +14,13 @@ export const queryKeys = {
     ['indicators', normaliseSymbol(symbol), period, interval] as const,
   recommendations: (symbol: string) => ['recommendations', normaliseSymbol(symbol)] as const,
   cryptoTop: (limit: number) => ['crypto', 'top', limit] as const,
+  portfolioStats: (req: PortfolioRequest) => ['portfolio', 'stats', JSON.stringify(req)] as const,
+  simulation: (req: SimulateRequest) => ['portfolio', 'simulate', JSON.stringify(req)] as const,
 }
 
-/** Never retry a 404: the symbol simply does not exist. */
+/** Never retry a client error (404 unknown symbol, 422 bad request, 429 rate limited). */
 export function retryUnlessNotFound(failureCount: number, error: unknown): boolean {
-  if (error instanceof ApiError && error.isNotFound) return false
+  if (error instanceof ApiError && (error.isNotFound || error.status === 422 || error.status === 429)) return false
   return failureCount < 2
 }
 
@@ -90,6 +92,26 @@ export function useCryptoTop(limit = 25) {
     staleTime: MINUTE,
     refetchInterval: MINUTE,
     placeholderData: keepPreviousData,
+  })
+}
+
+export function usePortfolioStats(req: PortfolioRequest | null) {
+  return useQuery({
+    queryKey: queryKeys.portfolioStats(req ?? { holdings: [], period: '2y' }),
+    queryFn: ({ signal }) => api.portfolioAnalyse(req!, { signal }),
+    enabled: Boolean(req && req.holdings.length > 0),
+    staleTime: 5 * MINUTE,
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** Runs only once a request is handed in (the page waits for "Run simulation"). */
+export function useSimulation(req: SimulateRequest | null) {
+  return useQuery({
+    queryKey: queryKeys.simulation(req ?? { holdings: [], period: '2y', horizon_years: 0, n_sims: 0, initial_value: 0, monthly_contribution: 0 }),
+    queryFn: ({ signal }) => api.portfolioSimulate(req!, { signal }),
+    enabled: Boolean(req && req.holdings.length > 0),
+    staleTime: 10 * MINUTE,
   })
 }
 

@@ -20,7 +20,7 @@ let seq = 0
 const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`
 
 export const state: State = {
-  tables: { watchlists: [], watchlist_items: [], dashboard_layouts: [] },
+  tables: { watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [] },
   users: new Map(),
   session: null,
   listeners: new Set(),
@@ -28,7 +28,7 @@ export const state: State = {
 }
 
 export function resetSupabaseMock() {
-  state.tables = { watchlists: [], watchlist_items: [], dashboard_layouts: [] }
+  state.tables = { watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [] }
   state.users.clear()
   state.session = null
   state.listeners.clear()
@@ -54,6 +54,10 @@ export function seedSymbols(userId: string, symbols: string[]) {
   symbols.forEach((symbol, position) =>
     state.tables.watchlist_items!.push({ id: uuid(), watchlist_id: list.id, symbol, position }),
   )
+}
+
+export function seedPortfolio(userId: string, row: { id: string; name: string; holdings: unknown; updated_at?: string }) {
+  state.tables.portfolios!.push({ user_id: userId, updated_at: row.updated_at ?? '2026-01-01T00:00:00Z', ...row })
 }
 
 export function symbolsFor(userId: string): string[] {

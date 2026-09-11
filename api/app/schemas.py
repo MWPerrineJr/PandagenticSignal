@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 Period = Literal["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
 Interval = Literal["1m", "5m", "15m", "30m", "1h", "1d", "1wk", "1mo"]
@@ -59,6 +59,85 @@ class CryptoQuote(BaseModel):
 class CryptoTop(BaseModel):
     as_of: int = Field(description="Unix epoch seconds (UTC) when the list was fetched")
     coins: list[CryptoQuote]
+
+
+SYMBOL_PATTERN = r"^[A-Za-z0-9.\-^=]+$"
+MAX_HOLDINGS = 20
+
+
+class Holding(BaseModel):
+    symbol: str = Field(min_length=1, max_length=16, pattern=SYMBOL_PATTERN)
+    # Exactly one of the two, and the same one for every holding in a request.
+    weight: float | None = Field(default=None, gt=0)
+    amount: float | None = Field(default=None, gt=0)
+
+    @model_validator(mode="after")
+    def _one_mode(self) -> Holding:
+        if (self.weight is None) == (self.amount is None):
+            raise ValueError("give either weight or amount, not both")
+        return self
+
+
+class PortfolioRequest(BaseModel):
+    holdings: list[Holding] = Field(min_length=1, max_length=MAX_HOLDINGS)
+    period: Literal["1y", "2y", "5y"] = "2y"
+
+    @model_validator(mode="after")
+    def _consistent(self) -> PortfolioRequest:
+        modes = {h.weight is None for h in self.holdings}
+        if len(modes) > 1:
+            raise ValueError("mix of weights and amounts: use one mode for all holdings")
+        symbols = [h.symbol.strip().upper() for h in self.holdings]
+        if len(set(symbols)) != len(symbols):
+            raise ValueError("duplicate symbols")
+        return self
+
+    def symbols_and_weights(self) -> tuple[list[str], list[float]]:
+        """Upper-cased symbols and weights normalised to sum to 1 (amounts become shares)."""
+        raw = [h.weight if h.weight is not None else h.amount for h in self.holdings]
+        total = sum(raw)  # type: ignore[arg-type]
+        return [h.symbol.strip().upper() for h in self.holdings], [float(v / total) for v in raw]  # type: ignore[operator]
+
+
+class SimulateRequest(PortfolioRequest):
+    horizon_years: int = Field(default=10, ge=1, le=40)
+    n_sims: int = Field(default=2000, ge=100, le=10_000)
+    initial_value: float = Field(default=10_000, gt=0)
+    monthly_contribution: float = Field(default=0, ge=0)
+    seed: int | None = Field(default=None, ge=0)
+
+
+class AssetStatsOut(BaseModel):
+    symbol: str
+    weight: float
+    annual_return: float
+    annual_vol: float
+
+
+class PortfolioStatsOut(BaseModel):
+    symbols: list[str]
+    weights: list[float]
+    period: str
+    start: str = Field(description="First aligned trading day, ISO date")
+    end: str
+    n_obs: int
+    annual_return: float
+    annual_vol: float
+    sharpe: float
+    max_drawdown: float
+    assets: list[AssetStatsOut]
+    correlation: list[list[float]]
+
+
+class SimulationOut(BaseModel):
+    initial_value: float
+    horizon_years: int
+    steps_per_year: int
+    n_sims: int
+    times: list[float] = Field(description="Years from today for each band sample")
+    bands: dict[str, list[float]]
+    terminal: dict[str, float]
+    stats: PortfolioStatsOut
 
 
 class Candle(BaseModel):

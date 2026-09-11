@@ -19,3 +19,5 @@ services:
         value: json
       - key: STOCK_API_RATE_LIMIT
         value: 120/minute
+      - key: STOCK_API_SIMULATE_RATE_LIMIT # Monte Carlo endpoint has its own, tighter window
+        value: 30/minute
