@@ -303,7 +303,7 @@ class CryptoData:
         """
         try:
             return self.cache.get_or_set(
-                "cg_markets", QUOTE_CCY, self.settings.crypto_ttl, self._fetch_markets
+                "cg_markets", QUOTE_CCY, self.settings.coingecko_ttl, self._fetch_markets
             )
         except (RateLimitedError, UpstreamError) as exc:
             stale = self._stale_markets

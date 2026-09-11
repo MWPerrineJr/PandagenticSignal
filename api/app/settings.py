@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     recommendations_ttl: int = 60 * 60
     # Crypto: Coinbase prices/candles and the CoinGecko ranking are both public and keyless.
     crypto_ttl: int = 60
+    # CoinGecko ranking/market caps move slowly and its keyless tier is throttled per IP.
+    coingecko_ttl: int = 60 * 5
     coinbase_api_url: str = "https://api.coinbase.com/api/v3/brokerage/market"
     coingecko_api_url: str = "https://api.coingecko.com/api/v3"
     # Optional CoinGecko demo key (raises the public rate limit); sent as x-cg-demo-api-key.

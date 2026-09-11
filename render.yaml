@@ -25,3 +25,5 @@ services:
         value: 10/minute
       - key: ANTHROPIC_API_KEY # paste the value in the Render dashboard; never committed
         sync: false
+      - key: STOCK_API_COINGECKO_API_KEY # free Demo key; per-key quota instead of Render's shared IP
+        sync: false

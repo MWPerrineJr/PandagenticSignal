@@ -73,7 +73,7 @@ the Render dashboard:
 | `STOCK_API_CORS_ORIGINS` | comma-separated exact browser origins; `render.yaml` sets the custom domain `https://pandagenticsignal.com` (+ `www`) and local dev |
 | `STOCK_API_CORS_ORIGIN_REGEX` | optional; `https://.*\.lovable\.app` allows every Lovable preview and published subdomain (set in `render.yaml`) |
 
-Optional: `STOCK_API_RATE_LIMIT` (default `120/minute` per client IP), `STOCK_API_SIMULATE_RATE_LIMIT` (default `30/minute`, its own window for `POST /portfolio/simulate`), `STOCK_API_COINGECKO_API_KEY` (free demo key, raises CoinGecko's public limit), `STOCK_API_LOG_LEVEL`.
+Optional: `STOCK_API_RATE_LIMIT` (default `120/minute` per client IP), `STOCK_API_SIMULATE_RATE_LIMIT` (default `30/minute`, its own window for `POST /portfolio/simulate`), `STOCK_API_COINGECKO_API_KEY` (free Demo key from coingecko.com → API; strongly recommended on Render, whose shared outbound IP is often throttled by CoinGecko's keyless tier), `STOCK_API_LOG_LEVEL`.
 
 AI news sentiment (`/sentiment/*`) is off until `ANTHROPIC_API_KEY` (or `STOCK_API_ANTHROPIC_API_KEY`) is set; `render.yaml` declares it with `sync: false`, so paste the value in the service's Environment tab. Tunables: `STOCK_API_SENTIMENT_MODEL` (default `claude-opus-5`), `STOCK_API_SENTIMENT_EFFORT` (`low`/`medium`/`high`), `STOCK_API_SENTIMENT_TTL` (default 3600 s per symbol), `STOCK_API_NEWS_TTL` (900 s), `STOCK_API_SENTIMENT_RATE_LIMIT` (default `10/minute`, own window). Each uncached report is one paid model call, roughly 3–5 ¢.
 The free plan spins down after ~15 min idle (first request then takes ~30 s); the Starter plan
