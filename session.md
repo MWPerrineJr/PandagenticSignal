@@ -238,7 +238,7 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 - [x] Config/docs: `render.yaml` (`ANTHROPIC_API_KEY` sync:false, `STOCK_API_SENTIMENT_RATE_LIMIT`), README env + data-source notes
 - [x] Checkpoint: committed + pushed as `68bc88e`, CI green
 - [x] Deployed 2026-09-11: `/sentiment/status` enabled with `claude-opus-5`; live AAPL report in 15 s, second call cached; limiter 10/minute. **Phase 11 closed.**
-- [ ] Production Playwright 6/7: crypto tab blocked by CoinGecko per-IP throttling on Render (note 42). Needs: Render Manual Deploy of `8bb6411` (stale-ranking fallback) and ideally a CoinGecko Demo key in `STOCK_API_COINGECKO_API_KEY`; then rerun → 7/7
+- [x] Production Playwright **7/7** (2026-09-11) after the user pasted a CoinGecko Demo key (`STOCK_API_COINGECKO_API_KEY`) and redeployed `da5cdfa`. Expansion plan (Phases 8–11) complete.
 
 ## Notes for later phases
 
@@ -272,7 +272,7 @@ Playwright 6/6 against https://pandagenticsignal.com. Phases 8–10 closed.
 (dialogs instead of `window.prompt`, pgTAP via `supabase test db --linked`, bundle splitting, …) and
 optionally server-side refusal fallbacks for the sentiment call. Pull first (`git pull`).
 **Before anything else on this Mac:** `find . -type f -flags +dataless | wc -l` must be 0 (note 36).
-**Pending from the user:** Render Manual Deploy of `8bb6411` (CoinGecko stale fallback) and a free CoinGecko Demo key pasted as `STOCK_API_COINGECKO_API_KEY` on Render (note 42); then production Playwright should be 7/7.
+**Nothing pending from the user.** Everything through Phase 11 is live; production Playwright 7/7 on 2026-09-11 with the CoinGecko Demo key in place.
 
 **Live pieces:**
 - Site: https://pandagenticsignal.com (Lovable-published, custom domain; www redirects). Lovable project
