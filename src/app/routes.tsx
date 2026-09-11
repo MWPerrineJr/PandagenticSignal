@@ -12,6 +12,8 @@ const ChartsPage = lazy(() => import('@/features/charts/charts-page').then((m) =
 const CryptoPage = lazy(() => import('@/features/crypto/crypto-page').then((m) => ({ default: m.CryptoPage })))
 const PortfolioPage = lazy(() => import('@/features/portfolio/portfolio-page').then((m) => ({ default: m.PortfolioPage })))
 const SentimentPage = lazy(() => import('@/features/sentiment/sentiment-page').then((m) => ({ default: m.SentimentPage })))
+const FaqPage = lazy(() => import('@/features/faq/faq-page').then((m) => ({ default: m.FaqPage })))
+const DisclaimerPage = lazy(() => import('@/features/legal/disclaimer-page').then((m) => ({ default: m.DisclaimerPage })))
 const RetirementPage = lazy(() => import('@/features/retirement/retirement-page').then((m) => ({ default: m.RetirementPage })))
 
 function PageFallback() {
@@ -62,6 +64,22 @@ export function AppRoutes() {
           element={
             <Suspense fallback={<PageFallback />}>
               <SentimentPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="faq"
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <FaqPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="disclaimer"
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <DisclaimerPage />
             </Suspense>
           }
         />

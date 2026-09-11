@@ -1,0 +1,181 @@
+{
+  "api_version": "0.2.0",
+  "rate_limit_default": "120/minute",
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "tag": "meta",
+      "purpose": "Liveness check used by the host",
+      "cache": [],
+      "rate_limit": null
+    },
+    {
+      "method": "GET",
+      "path": "/search",
+      "tag": "search",
+      "purpose": "Symbol and company search (stocks, ETFs, crypto)",
+      "cache": [
+        {
+          "what": "search results",
+          "seconds": 86400
+        }
+      ],
+      "rate_limit": "120/minute"
+    },
+    {
+      "method": "GET",
+      "path": "/quote/{ticker}",
+      "tag": "quotes",
+      "purpose": "Latest price, change, ranges, market cap",
+      "cache": [
+        {
+          "what": "quotes",
+          "seconds": 60
+        }
+      ],
+      "rate_limit": "120/minute"
+    },
+    {
+      "method": "GET",
+      "path": "/quotes",
+      "tag": "quotes",
+      "purpose": "Batch quotes for the watchlist",
+      "cache": [
+        {
+          "what": "quotes",
+          "seconds": 60
+        }
+      ],
+      "rate_limit": "120/minute"
+    },
+    {
+      "method": "GET",
+      "path": "/history/{ticker}",
+      "tag": "history",
+      "purpose": "OHLCV candles for a period and interval",
+      "cache": [
+        {
+          "what": "candles",
+          "seconds": 300
+        }
+      ],
+      "rate_limit": "120/minute"
+    },
+    {
+      "method": "GET",
+      "path": "/indicators/catalog",
+      "tag": "history",
+      "purpose": "The 20 indicators with parameters and formulas",
+      "cache": [],
+      "rate_limit": "120/minute"
+    },
+    {
+      "method": "GET",
+      "path": "/indicators/{ticker}",
+      "tag": "history",
+      "purpose": "Candles plus up to eight requested indicators",
+      "cache": [
+        {
+          "what": "candles",
+          "seconds": 300
+        }
+      ],
+      "rate_limit": "120/minute"
+    },
+    {
+      "method": "GET",
+      "path": "/recommendations/{ticker}",
+      "tag": "analysts",
+      "purpose": "Analyst ratings, price targets, upgrades/downgrades",
+      "cache": [
+        {
+          "what": "analyst data",
+          "seconds": 3600
+        }
+      ],
+      "rate_limit": "120/minute"
+    },
+    {
+      "method": "GET",
+      "path": "/crypto/top",
+      "tag": "crypto",
+      "purpose": "Top coins by market cap (CoinGecko ranking, Coinbase prices)",
+      "cache": [
+        {
+          "what": "coin prices",
+          "seconds": 60
+        },
+        {
+          "what": "market-cap ranking",
+          "seconds": 300
+        }
+      ],
+      "rate_limit": "120/minute"
+    },
+    {
+      "method": "POST",
+      "path": "/portfolio/analyse",
+      "tag": "portfolio",
+      "purpose": "Risk/return statistics and correlation for a set of holdings",
+      "cache": [
+        {
+          "what": "candles",
+          "seconds": 300
+        }
+      ],
+      "rate_limit": "120/minute"
+    },
+    {
+      "method": "POST",
+      "path": "/portfolio/simulate",
+      "tag": "portfolio",
+      "purpose": "Correlated Monte Carlo projection of a portfolio",
+      "cache": [
+        {
+          "what": "candles",
+          "seconds": 300
+        }
+      ],
+      "rate_limit": "30/minute"
+    },
+    {
+      "method": "POST",
+      "path": "/retirement/project",
+      "tag": "retirement",
+      "purpose": "Deterministic and Monte Carlo retirement projection",
+      "cache": [
+        {
+          "what": "candles",
+          "seconds": 300
+        }
+      ],
+      "rate_limit": "30/minute"
+    },
+    {
+      "method": "GET",
+      "path": "/sentiment/status",
+      "tag": "sentiment",
+      "purpose": "Whether AI sentiment is configured, and the model",
+      "cache": [],
+      "rate_limit": "120/minute"
+    },
+    {
+      "method": "GET",
+      "path": "/sentiment/{ticker}",
+      "tag": "sentiment",
+      "purpose": "Claude's read of recent news tone for a symbol",
+      "cache": [
+        {
+          "what": "headlines",
+          "seconds": 900
+        },
+        {
+          "what": "sentiment report",
+          "seconds": 3600
+        }
+      ],
+      "rate_limit": "10/minute"
+    }
+  ]
+}

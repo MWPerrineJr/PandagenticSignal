@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ActivityIcon } from 'lucide-react'
+import { DISCLAIMER_SHORT } from '@/content/disclaimer'
+import { AcknowledgementBar } from '@/features/legal/acknowledgement-bar'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { UserMenu } from '@/components/layout/user-menu'
@@ -15,6 +17,7 @@ export const NAV_ITEMS = [
   { to: '/portfolio', label: 'Portfolio' },
   { to: '/retirement', label: 'Retirement' },
   { to: '/sentiment', label: 'Sentiment' },
+  { to: '/faq', label: 'FAQ' },
 ] as const
 
 export function AppShell() {
@@ -56,6 +59,19 @@ export function AppShell() {
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
         <Outlet />
       </main>
+      <footer className="border-t">
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-xs text-muted-foreground">
+          <span>{DISCLAIMER_SHORT}</span>
+          <NavLink to="/disclaimer" className="underline underline-offset-4 hover:text-foreground">
+            Disclaimer
+          </NavLink>
+          <NavLink to="/faq" className="underline underline-offset-4 hover:text-foreground">
+            FAQ
+          </NavLink>
+          <span className="ml-auto">Data: Yahoo Finance · Coinbase · CoinGecko</span>
+        </div>
+      </footer>
+      <AcknowledgementBar />
     </div>
   )
 }

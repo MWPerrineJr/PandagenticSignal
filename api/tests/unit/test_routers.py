@@ -312,3 +312,16 @@ def test_retirement_validation(client: TestClient) -> None:
 def test_cors_allows_dev_origin(client: TestClient) -> None:
     r = client.get("/health", headers={"Origin": "http://localhost:5173"})
     assert r.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
+
+def test_endpoints_fixture_is_current() -> None:
+    """`src/content/endpoints.json` (the FAQ's endpoint table) must match the app; regenerate
+    with `uv run python scripts/export_endpoints.py` after adding or renaming a route."""
+    from scripts.export_endpoints import FIXTURE, NOTES, endpoints_json
+
+    assert FIXTURE.exists(), f"missing {FIXTURE}"
+    assert FIXTURE.read_text() == endpoints_json(), (
+        "fixture is stale: run scripts/export_endpoints.py"
+    )
+    paths = {row["path"] for row in __import__("json").loads(FIXTURE.read_text())["endpoints"]}
+    assert paths == set(NOTES), f"NOTES out of sync with routes: {paths ^ set(NOTES)}"

@@ -147,6 +147,23 @@ test.describe('smoke (live data, signed out)', () => {
     await expect(page.getByTestId('sentiment-footer')).toContainText(/not investment advice/i)
   })
 
+  test('FAQ and disclaimer: nav, generated endpoint table, footer link, one-time acknowledgement', async ({ page }) => {
+    await page.goto('/')
+    const bar = page.getByRole('region', { name: 'Disclaimer notice' })
+    await expect(bar).toBeVisible()
+    await bar.getByRole('button', { name: 'I understand' }).click()
+    await expect(bar).toHaveCount(0)
+    await page.getByRole('link', { name: 'FAQ' }).first().click()
+    await expect(page.getByRole('heading', { level: 1, name: 'FAQ' })).toBeVisible()
+    await expect(page.getByRole('table', { name: 'API endpoints' })).toContainText('/sentiment/{ticker}')
+    await expect(page.getByRole('table', { name: 'Indicator definitions' })).toContainText('Ichimoku Cloud')
+    await page.getByRole('contentinfo').getByRole('link', { name: 'Disclaimer' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Disclaimer' })).toBeVisible()
+    await expect(page.getByText(/invest at your own risk/i).first()).toBeVisible()
+    await page.reload()
+    await expect(page.getByRole('region', { name: 'Disclaimer notice' })).toHaveCount(0)
+  })
+
   test('unknown symbol shows a friendly error, not a crash', async ({ page }) => {
     await page.goto('/?t=ZZZZNOTREAL')
     await expect(page.getByRole('alert').filter({ hasText: /no data for ZZZZNOTREAL/i })).toBeVisible()

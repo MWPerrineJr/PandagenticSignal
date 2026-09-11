@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ExternalLinkIcon, SparklesIcon } from 'lucide-react'
 import { ApiError, type Sentiment, type SentimentOut } from '@/lib/api'
 import { useSentiment, useSentimentStatus } from '@/lib/queries'
@@ -126,7 +127,10 @@ function Result({ data, compact }: { data: SentimentOut; compact: boolean }) {
   const generated = new Date(data.generated_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const footer = (
     <p className="text-xs text-muted-foreground" data-testid="sentiment-footer">
-      {data.disclaimer} · {data.news_count} {data.news_count === 1 ? 'article' : 'articles'} · generated {generated}
+      <Link to="/disclaimer" className="underline underline-offset-4">
+        {data.disclaimer}
+      </Link>{' '}
+      · {data.news_count} {data.news_count === 1 ? 'article' : 'articles'} · generated {generated}
       {data.cached && ' · cached'}
     </p>
   )
