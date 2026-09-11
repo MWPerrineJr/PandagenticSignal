@@ -27,7 +27,12 @@ class Quote(BaseModel):
     market_cap: float | None = None
     currency: str | None = None
     exchange: str | None = None
-    
+    day_high: float | None = None
+    day_low: float | None = None
+    year_high: float | None = None
+    year_low: float | None = None
+
+
 class QuoteBatch(BaseModel):
     quotes: list[Quote]
     missing: list[str] = Field(default_factory=list)
