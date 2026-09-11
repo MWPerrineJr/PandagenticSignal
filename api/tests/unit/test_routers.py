@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
-from tests.fakes import FakeYF
+from app.errors import RateLimitedError, UpstreamError
+from tests.fakes import FakeFetch, FakeYF
 
 
 def test_health(client: TestClient) -> None:
@@ -118,8 +119,24 @@ def test_crypto_top(client: TestClient) -> None:
         "market_cap",
         "volume",
         "circulating_supply",
+        "rank",
+        "icon",
+        "high_24h",
+        "low_24h",
+        "price_source",
     }
+    assert body["coins"][0]["price_source"] == "coinbase"
     assert client.get("/crypto/top").status_code == 200  # default limit
+
+
+def test_crypto_quote_and_history_routes(client: TestClient) -> None:
+    q = client.get("/quote/BTC-USD").json()
+    assert q["exchange"] == "Coinbase"
+    assert q["day_high"] == 66000.0
+    h = client.get("/history/BTC-USD", params={"period": "5d", "interval": "1h"}).json()
+    assert h["symbol"] == "BTC-USD"
+    assert 118 <= len(h["candles"]) <= 122
+    assert client.get("/indicators/ETH-USD", params={"period": "6mo"}).status_code == 200
 
 
 def test_crypto_top_validation(client: TestClient) -> None:
@@ -127,9 +144,11 @@ def test_crypto_top_validation(client: TestClient) -> None:
     assert client.get("/crypto/top", params={"limit": 500}).status_code == 422
 
 
-def test_crypto_top_upstream_failure_is_502(client: TestClient, fake_yf: FakeYF) -> None:
-    fake_yf.fail_with_upstream()
+def test_crypto_top_upstream_failure_is_502(client: TestClient, fake_fetch: FakeFetch) -> None:
+    fake_fetch.error = UpstreamError("CoinGecko returned 502")
     assert client.get("/crypto/top").status_code == 502
+    fake_fetch.error = RateLimitedError("CoinGecko rate limit reached")
+    assert client.get("/crypto/top", params={"limit": 7}).status_code == 503
 
 
 def test_cors_allows_dev_origin(client: TestClient) -> None:

@@ -77,9 +77,9 @@ export const quoteFixtures: Record<string, Quote> = {
 export const cryptoTopFixture: CryptoTop = {
   as_of: 1_789_137_683,
   coins: [
-    { symbol: 'BTC-USD', name: 'Bitcoin USD', price: 65000, change_pct: 1.5, market_cap: 1.3e12, volume: 31e9, circulating_supply: 20_000_000 },
-    { symbol: 'ETH-USD', name: 'Ethereum USD', price: 3200, change_pct: -0.75, market_cap: 3.9e11, volume: 12e9, circulating_supply: 120_000_000 },
-    { symbol: 'DOGE-USD', name: 'Dogecoin USD', price: 0.1234, change_pct: null, market_cap: 1.8e10, volume: null, circulating_supply: null },
+    { symbol: 'BTC-USD', name: 'Bitcoin USD', price: 65000, change_pct: 1.5, market_cap: 1.3e12, volume: 31e9, circulating_supply: 20_000_000, rank: 1, icon: 'https://img.example/btc.png', high_24h: 66000, low_24h: 63500, price_source: 'coinbase' },
+    { symbol: 'ETH-USD', name: 'Ethereum USD', price: 3200, change_pct: -0.75, market_cap: 3.9e11, volume: 12e9, circulating_supply: 120_000_000, rank: 2, icon: null, price_source: 'coinbase' },
+    { symbol: 'DOGE-USD', name: 'Dogecoin USD', price: 0.1234, change_pct: null, market_cap: 1.8e10, volume: null, circulating_supply: null, rank: 4, price_source: 'coingecko' },
   ],
 }
 

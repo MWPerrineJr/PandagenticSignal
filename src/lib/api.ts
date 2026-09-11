@@ -57,6 +57,12 @@ export const cryptoQuoteSchema = z.object({
   market_cap: nullableNumber.optional(),
   volume: nullableNumber.optional(),
   circulating_supply: nullableNumber.optional(),
+  rank: z.number().int().nullable().optional(),
+  icon: nullableString.optional(),
+  high_24h: nullableNumber.optional(),
+  low_24h: nullableNumber.optional(),
+  /** Where the price came from: Coinbase when the pair trades there, else CoinGecko. */
+  price_source: z.enum(['coinbase', 'coingecko']).optional(),
 })
 export type CryptoQuote = z.infer<typeof cryptoQuoteSchema>
 

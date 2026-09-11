@@ -5,8 +5,6 @@ The yfinance module is held as an instance attribute so tests can swap in a fake
 
 from __future__ import annotations
 
-import math
-import time
 from typing import Any
 
 import pandas as pd
@@ -16,7 +14,6 @@ from yfinance import exceptions as yf_exc
 from app.errors import RateLimitedError, TickerNotFoundError, UpstreamError
 from app.schemas import (
     Candle,
-    CryptoQuote,
     CryptoTop,
     GradeChange,
     PriceTargets,
@@ -25,39 +22,12 @@ from app.schemas import (
     SearchResult,
 )
 from app.services.cache import Cache
+from app.services.convert import _int, _num, _price, _str
+from app.services.crypto import CryptoData
 from app.settings import Settings, get_settings
 
 SEARCH_TYPES = {"EQUITY", "ETF", "CRYPTOCURRENCY"}
 MAX_GRADE_CHANGES = 50
-CRYPTO_SCREEN = "all_cryptocurrencies_us"
-MAX_CRYPTO = 100
-
-
-def _num(value: Any) -> float | None:
-    if value is None:
-        return None
-    try:
-        f = float(value)
-    except (TypeError, ValueError):
-        return None
-    return f if math.isfinite(f) else None
-
-
-def _price(value: Any) -> float | None:
-    """Analyst price fields: Yahoo encodes "no target" as 0, which is never a real price."""
-    f = _num(value)
-    return f if f is not None and f > 0 else None
-
-
-def _int(value: Any) -> int | None:
-    f = _num(value)
-    return int(f) if f is not None else None
-
-
-def _str(value: Any) -> str | None:
-    if value is None or (isinstance(value, float) and math.isnan(value)):
-        return None
-    return str(value)
 
 
 def normalise_ticker(ticker: str) -> str:
@@ -97,10 +67,13 @@ class MarketData:
         cache: Cache | None = None,
         settings: Settings | None = None,
         yfinance_module: Any = yf,
+        crypto: CryptoData | None = None,
     ) -> None:
         self.cache = cache or Cache()
         self.settings = settings or get_settings()
         self.yf = yfinance_module
+        # Coinbase/CoinGecko for coins; anything Coinbase does not trade falls back to Yahoo.
+        self.crypto = crypto or CryptoData(settings=self.settings)
 
     # -- helpers ----------------------------------------------------------------------------
 
@@ -151,6 +124,8 @@ class MarketData:
 
     def quote(self, ticker: str) -> Quote:
         symbol = normalise_ticker(ticker)
+        if self.crypto.is_crypto(symbol):
+            return self.crypto.quote(symbol)
         return self.cache.get_or_set(
             "quote", symbol, self.settings.quote_ttl, lambda: self._quote(symbol)
         )
@@ -211,40 +186,15 @@ class MarketData:
     # -- crypto -----------------------------------------------------------------------------
 
     def top_crypto(self, limit: int = 25) -> CryptoTop:
-        """Top coins by market cap from Yahoo's predefined crypto screener."""
-        limit = max(1, min(int(limit), MAX_CRYPTO))
-        return self.cache.get_or_set(
-            "crypto_top", limit, self.settings.crypto_ttl, lambda: self._top_crypto(limit)
-        )
-
-    def _top_crypto(self, limit: int) -> CryptoTop:
-        result = self._call(self.yf.screen, CRYPTO_SCREEN, count=limit)
-        quotes = result.get("quotes") or [] if isinstance(result, dict) else []
-        coins: list[CryptoQuote] = []
-        for item in quotes:
-            symbol = _str(item.get("symbol"))
-            price = _num(item.get("regularMarketPrice"))
-            if not symbol or price is None:
-                continue
-            coins.append(
-                CryptoQuote(
-                    symbol=symbol,
-                    name=_str(item.get("shortName")) or _str(item.get("longName")) or symbol,
-                    price=price,
-                    change_pct=_num(item.get("regularMarketChangePercent")),
-                    market_cap=_num(item.get("marketCap")),
-                    volume=_num(item.get("volume24Hr")) or _num(item.get("regularMarketVolume")),
-                    circulating_supply=_num(item.get("circulatingSupply")),
-                )
-            )
-            if len(coins) >= limit:
-                break
-        return CryptoTop(as_of=int(time.time()), coins=coins)
+        """Top coins: CoinGecko ranking with Coinbase prices (see `services.crypto`)."""
+        return self.crypto.top(limit)
 
     # -- history ----------------------------------------------------------------------------
 
     def history(self, ticker: str, period: str = "1y", interval: str = "1d") -> pd.DataFrame:
         symbol = normalise_ticker(ticker)
+        if self.crypto.is_crypto(symbol):
+            return self.crypto.history(symbol, period, interval)
         key = (symbol, period, interval)
         df = self.cache.get_or_set(
             "history",

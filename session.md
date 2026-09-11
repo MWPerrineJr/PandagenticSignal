@@ -54,6 +54,8 @@ Last updated: 2026-09-11
 
 37. **Phase 8 (Crypto) built (2026-09-11).** API: `GET /crypto/top?limit=1..100` from `yf.screen("all_cryptocurrencies_us")` (cache ns `crypto_top`, TTL `crypto_ttl`=60 s), `SEARCH_TYPES` now includes `CRYPTOCURRENCY`, `Quote.quote_type` from `fast_info["quote_type"]`. Frontend: Crypto tab (top-25 table with 24h %, market cap, 24h volume, supply, 1M sparkline, star = track; coin detail = QuoteCard + 6M chart), `crypto` dashboard widget (top-N rows), "Crypto" badge in search results, quote card says "Crypto · USD", "Volume (24h)" and "24h range" for coins, `formatPrice` keeps 4–6 decimals under $1, `formatPct` added, shadcn `table` primitive installed. Verified live locally: `/crypto/top?limit=3` (BTC, ETH, USDT), `/search?q=bitcoin` (BTC-USD tagged CRYPTOCURRENCY), `/quote/BTC-USD` (`quote_type` set; note `fast_info` market cap is null for coins, the screener has it). Tests: API 76 passed (99% coverage), frontend 144 tests / 25 files, e2e spec gained a Crypto test.
 
+38. **Crypto data moved to Coinbase + CoinGecko (2026-09-11, user's choice).** The user asked for Coinbase's free API; it has no market cap/supply, so the user picked "Coinbase + CoinGecko for ranking". New `api/app/services/crypto.py` (`CryptoData`): **Coinbase** Advanced Trade public market endpoints (no key, ~10 req/s) for prices, 24 h change/volume/range and OHLCV candles; **CoinGecko** `/coins/markets` (no key; optional `STOCK_API_COINGECKO_API_KEY` demo key raises its limit) for the market-cap ranking, market cap, circulating supply, names and icons. `MarketData.quote()`/`history()` route any `X-USD` symbol that is an online Coinbase USD spot product to Coinbase (so charts, indicators, sparklines and watchlist quotes for coins are Coinbase too); anything else, or Coinbase being unreachable, falls back to Yahoo as before. Design facts: one cached Coinbase `/products` list (1.2 MB, 402 USD pairs, TTL `crypto_ttl`=60 s) serves membership checks and every coin quote (no per-coin calls); candles are paged backwards in chunks of 300 (Coinbase rejects ≥350) with at most 12 requests (most recent window wins), weekly/monthly are resampled from daily; year high/low for a coin comes from its cached 1y daily candles; `CryptoData` has its own `Cache` so its lock never serialises yfinance calls; the HTTP fetcher is injectable (`tests/fakes.py::FakeFetch`), `make_fetcher` maps 404→`NotFound`, 429→503, other 4xx/5xx/network→502. `CryptoQuote` gained `rank`, `icon`, `high_24h`, `low_24h`, `price_source` ("coinbase" | "coingecko"; the table marks CoinGecko-priced coins with "· CG"). `httpx` is now an explicit dependency; scalar helpers moved to `services/convert.py`. Verified live locally: top 4 (BTC, ETH, USDT, BNB all priced by Coinbase), `/quote/BTC-USD` exchange "Coinbase" with 24 h + 52-week ranges and market cap, `/history/BTC-USD` 1mo/1d = 30 candles, 5y/1wk = 261, 1d/5m = 288, `/indicators/ETH-USD` 200, unknown coin 404, AAPL untouched. Tests: API 101 passed (new `test_crypto.py`), frontend updated for the new fields.
+
 ## Repository state
 
 ```
@@ -119,7 +121,7 @@ Commits:
 | `6f244fe` | User: Phase 7 work in progress ("updated files") |
 | `0b77b56` | Phase 7 part 1: hardening, Docker, Playwright, README |
 
-Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base UI), vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, pandas 3.0.5. GitHub CLI authenticated; no remote configured yet.
+Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base UI), vitest 5, MSW 2; Python 3.12 via uv, FastAPI, yfinance 1.7.0, httpx 0.28, pandas 3.0.5. Data: Yahoo (stocks/ETFs/search), Coinbase + CoinGecko (crypto). GitHub CLI authenticated; no remote configured yet.
 
 ## Phase checklist
 
@@ -202,9 +204,10 @@ Toolchain: Node 24.18, Vite 8, React 19, TypeScript 6, Tailwind 4, shadcn (Base 
 
 ### Phase 8 — Crypto
 - [x] API: `/crypto/top`, crypto in search, `Quote.quote_type`, `crypto_ttl`; fakes + 6 new tests
+- [x] Data source switched to Coinbase (prices, candles) + CoinGecko (ranking, market cap, supply, icons) — note 38; Yahoo only as fallback for coins Coinbase does not trade
 - [x] Frontend: Crypto tab (`src/features/crypto/`), `crypto` widget, search badge, quote-card labels, `formatPrice`/`formatPct`
 - [x] Tests: `crypto-page.test.tsx` (6), `crypto-widget.test.tsx` (3), `format.test.ts`, api client tests; e2e "crypto tab" test
-- [x] Checkpoint part 1: committed + pushed as `f142edf`, CI green, crypto e2e test 1/1 locally against the dev servers
+- [x] Checkpoint part 1: committed + pushed as `f142edf`, CI green, crypto e2e test 1/1 locally against the dev servers; Coinbase/CoinGecko switch committed after that (see git log)
 - [ ] Checkpoint part 2 (**needs the user**): Render did not auto-deploy within 15 min (still serving 0.2.0 without `/crypto/top`) → Manual Deploy → "Deploy latest commit"; then Lovable → Publish → Update so pandagenticsignal.com gets the Crypto tab; then verify `curl https://stock-tool-api-qg9s.onrender.com/crypto/top?limit=3` and `E2E_BASE_URL=https://pandagenticsignal.com npx playwright test` (expect 4/4)
 
 ## Notes for later phases

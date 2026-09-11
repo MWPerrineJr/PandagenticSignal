@@ -20,7 +20,13 @@ class Settings(BaseSettings):
     quote_ttl: int = 60
     history_ttl: int = 60 * 5
     recommendations_ttl: int = 60 * 60
+    # Crypto: Coinbase prices/candles and the CoinGecko ranking are both public and keyless.
     crypto_ttl: int = 60
+    coinbase_api_url: str = "https://api.coinbase.com/api/v3/brokerage/market"
+    coingecko_api_url: str = "https://api.coingecko.com/api/v3"
+    # Optional CoinGecko demo key (raises the public rate limit); sent as x-cg-demo-api-key.
+    coingecko_api_key: str = ""
+    http_timeout: float = 10.0
 
     # Per-client rate limit (slowapi syntax), keyed by forwarded client IP.
     rate_limit: str = "120/minute"

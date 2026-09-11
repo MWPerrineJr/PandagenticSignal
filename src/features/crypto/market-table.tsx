@@ -45,11 +45,17 @@ export function MarketTable({ coins, activeSymbol, onSelect }: MarketTableProps)
                 data-testid={`row-${coin.symbol}`}
                 className={cn('hover:bg-muted/30', coin.symbol === activeSymbol && 'bg-muted/40')}
               >
-                <TableCell className="text-right text-muted-foreground tabular-nums">{i + 1}</TableCell>
+                <TableCell className="text-right text-muted-foreground tabular-nums">{coin.rank ?? i + 1}</TableCell>
                 <TableCell>
-                  <button type="button" onClick={() => onSelect(coin.symbol)} className="text-left hover:underline">
-                    <span className="block font-medium">{coin.name}</span>
-                    <span className="block font-mono text-xs text-muted-foreground">{coin.symbol}</span>
+                  <button type="button" onClick={() => onSelect(coin.symbol)} className="flex items-center gap-2 text-left hover:underline">
+                    {coin.icon && <img src={coin.icon} alt="" width={20} height={20} className="size-5 shrink-0 rounded-full" loading="lazy" />}
+                    <span>
+                      <span className="block font-medium">{coin.name}</span>
+                      <span className="block font-mono text-xs text-muted-foreground">
+                        {coin.symbol}
+                        {coin.price_source === 'coingecko' && <span title="Not traded on Coinbase; price from CoinGecko"> · CG</span>}
+                      </span>
+                    </span>
                   </button>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{formatPrice(coin.price)}</TableCell>

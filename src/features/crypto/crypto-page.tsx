@@ -46,7 +46,10 @@ export function CryptoPage() {
       ) : (
         <MarketTable coins={data.coins} activeSymbol={selected} onSelect={setTicker} />
       )}
-      <p className="text-xs text-muted-foreground">Prices refresh every minute. Coins trade around the clock, so “24h” replaces the daily session.</p>
+      <p className="text-xs text-muted-foreground">
+        Ranking, market cap and supply from CoinGecko; prices, 24h stats and charts from Coinbase (CG marks coins Coinbase does not
+        trade). Refreshes every minute; coins trade around the clock, so “24h” replaces the daily session.
+      </p>
     </section>
   )
 }

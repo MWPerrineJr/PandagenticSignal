@@ -4,9 +4,10 @@ from fastapi.testclient import TestClient
 from app.deps import get_market_data
 from app.main import create_app
 from app.services.cache import Cache
+from app.services.crypto import CryptoData
 from app.services.market_data import MarketData
 from app.settings import Settings
-from tests.fakes import FakeYF, make_ohlc
+from tests.fakes import FAKE_NOW, FakeFetch, FakeYF, make_ohlc
 
 
 @pytest.fixture
@@ -15,8 +16,20 @@ def fake_yf() -> FakeYF:
 
 
 @pytest.fixture
-def market_data(fake_yf: FakeYF) -> MarketData:
-    return MarketData(cache=Cache(), settings=Settings(), yfinance_module=fake_yf)
+def fake_fetch() -> FakeFetch:
+    return FakeFetch()
+
+
+@pytest.fixture
+def crypto(fake_fetch: FakeFetch) -> CryptoData:
+    return CryptoData(
+        cache=Cache(), settings=Settings(), fetch_json=fake_fetch, now=lambda: FAKE_NOW
+    )
+
+
+@pytest.fixture
+def market_data(fake_yf: FakeYF, crypto: CryptoData) -> MarketData:
+    return MarketData(cache=Cache(), settings=Settings(), yfinance_module=fake_yf, crypto=crypto)
 
 
 @pytest.fixture

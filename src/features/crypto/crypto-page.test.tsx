@@ -25,6 +25,10 @@ describe('CryptoPage', () => {
     const doge = screen.getByTestId('row-DOGE-USD')
     expect(within(doge).getByText('$0.1234')).toBeInTheDocument()
     expect(within(doge).getAllByText('—')).toHaveLength(3) // 24h change, volume and supply are null
+    expect(within(doge).getByText('4')).toBeInTheDocument() // CoinGecko rank, not the row index
+    expect(within(doge).getByTitle(/price from CoinGecko/i)).toBeInTheDocument()
+    expect(within(btc).queryByTitle(/price from CoinGecko/i)).not.toBeInTheDocument()
+    expect(within(btc).getByRole('presentation', { hidden: true })).toHaveAttribute('src', 'https://img.example/btc.png')
     expect(screen.getByText(/top 3 by market cap/i)).toBeInTheDocument()
     expect(await within(btc).findByRole('img', { name: /BTC-USD one-month trend/ })).toBeInTheDocument()
   })

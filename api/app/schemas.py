@@ -48,6 +48,12 @@ class CryptoQuote(BaseModel):
     market_cap: float | None = None
     volume: float | None = None
     circulating_supply: float | None = None
+    rank: int | None = None
+    icon: str | None = None
+    high_24h: float | None = None
+    low_24h: float | None = None
+    # "coinbase" when the pair trades on Coinbase, else CoinGecko's price.
+    price_source: Literal["coinbase", "coingecko"] = "coinbase"
 
 
 class CryptoTop(BaseModel):

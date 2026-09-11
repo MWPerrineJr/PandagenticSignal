@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from yfinance import exceptions as yf_exc
 
+from app.services.crypto import NotFound
+
 
 def make_ohlc(rows: int = 30, start: float = 100.0, seed: int = 7) -> pd.DataFrame:
     """Deterministic daily OHLCV frame with a tz-aware index, like `Ticker.history` returns."""
@@ -76,36 +78,6 @@ SEARCH_QUOTES = [
         "exchDisp": "CCC",
     },
     {"symbol": "BTC=F", "shortname": "Bitcoin Futures", "quoteType": "FUTURE"},
-]
-
-# Rows in the shape of `yf.screen("all_cryptocurrencies_us")["quotes"]`.
-SCREEN_QUOTES = [
-    {
-        "symbol": "BTC-USD",
-        "shortName": "Bitcoin USD",
-        "regularMarketPrice": 65000.0,
-        "regularMarketChangePercent": 1.5,
-        "marketCap": 1.3e12,
-        "regularMarketVolume": 30_000_000_000,
-        "volume24Hr": 31_000_000_000,
-        "circulatingSupply": 20_000_000,
-    },
-    {
-        "symbol": "ETH-USD",
-        "longName": "Ethereum USD",
-        "regularMarketPrice": 3200.0,
-        "regularMarketChangePercent": -0.75,
-        "marketCap": 3.9e11,
-        "regularMarketVolume": 12_000_000_000,
-        "circulatingSupply": 120_000_000,
-    },
-    {"symbol": "BROKEN-USD", "shortName": "No price"},
-    {
-        "symbol": "SOL-USD",
-        "shortName": "Solana USD",
-        "regularMarketPrice": 150.0,
-        "marketCap": 7e10,
-    },
 ]
 
 RECOMMENDATIONS = pd.DataFrame(
@@ -215,12 +187,6 @@ class FakeYF:
     def Search(self, query: str, **kwargs: object) -> FakeSearch:  # noqa: N802
         return FakeSearch(query, self, **kwargs)
 
-    def screen(self, query: str, count: int = 25, **_: object) -> dict:
-        self.maybe_raise()
-        FakeTicker.calls.append(("screen", f"{query}:{count}"))
-        rows = SCREEN_QUOTES[:count] if query == "all_cryptocurrencies_us" else []
-        return {"quotes": rows, "count": len(rows), "total": len(SCREEN_QUOTES)}
-
     # Convenience constructors for error scenarios.
     def fail_with_rate_limit(self) -> None:
         self.error = yf_exc.YFRateLimitError()
@@ -230,3 +196,193 @@ class FakeYF:
 
     def fail_with_network(self) -> None:
         self.error = ConnectionError("no route to host")
+
+
+# -- Coinbase + CoinGecko ---------------------------------------------------------------------
+
+FAKE_NOW = 1_789_000_000  # 2026-09-10 UTC
+
+COINBASE_PRODUCTS = {
+    "products": [
+        {
+            "product_id": "BTC-USD",
+            "base_currency_id": "BTC",
+            "quote_currency_id": "USD",
+            "base_name": "Bitcoin",
+            "price": "65000",
+            "price_percentage_change_24h": "1.5",
+            "approximate_quote_24h_volume": "31000000000.5",
+            "high_24h": "66000",
+            "low_24h": "63500",
+            "status": "online",
+            "is_disabled": False,
+            "view_only": False,
+        },
+        {
+            "product_id": "ETH-USD",
+            "base_currency_id": "ETH",
+            "quote_currency_id": "USD",
+            "base_name": "Ethereum",
+            "price": "3200",
+            "price_percentage_change_24h": "-0.75",
+            "approximate_quote_24h_volume": "12000000000",
+            "high_24h": "3300",
+            "low_24h": "3150",
+            "status": "online",
+            "is_disabled": False,
+            "view_only": False,
+        },
+        {
+            "product_id": "DOGE-USD",
+            "base_currency_id": "DOGE",
+            "quote_currency_id": "USD",
+            "base_name": "Dogecoin",
+            "price": "0.1234",
+            "price_percentage_change_24h": "",
+            "approximate_quote_24h_volume": "",
+            "high_24h": "",
+            "low_24h": "",
+            "status": "online",
+            "is_disabled": False,
+            "view_only": False,
+        },
+        {
+            "product_id": "BTC-EUR",
+            "base_currency_id": "BTC",
+            "quote_currency_id": "EUR",
+            "price": "1",
+        },
+        {
+            "product_id": "OLD-USD",
+            "base_currency_id": "OLD",
+            "quote_currency_id": "USD",
+            "price": "1",
+            "status": "delisted",
+        },
+        {
+            "product_id": "OFF-USD",
+            "base_currency_id": "OFF",
+            "quote_currency_id": "USD",
+            "price": "1",
+            "status": "online",
+            "is_disabled": True,
+        },
+    ]
+}
+
+COINGECKO_MARKETS = [
+    {
+        "id": "bitcoin",
+        "symbol": "btc",
+        "name": "Bitcoin",
+        "image": "https://img.example/btc.png",
+        "current_price": 64990,
+        "market_cap": 1.3e12,
+        "market_cap_rank": 1,
+        "total_volume": 3.3e10,
+        "high_24h": 65990,
+        "low_24h": 63490,
+        "price_change_percentage_24h": 1.4,
+        "circulating_supply": 20_000_000.0,
+    },
+    {
+        "id": "ethereum",
+        "symbol": "eth",
+        "name": "Ethereum",
+        "image": "https://img.example/eth.png",
+        "current_price": 3199,
+        "market_cap": 3.9e11,
+        "market_cap_rank": 2,
+        "total_volume": 1.2e10,
+        "price_change_percentage_24h": -0.7,
+        "circulating_supply": 120_000_000.0,
+    },
+    {
+        "id": "tether",
+        "symbol": "usdt",
+        "name": "Tether",
+        "image": "https://img.example/usdt.png",
+        "current_price": 0.9996,
+        "market_cap": 1.8e11,
+        "market_cap_rank": 3,
+        "total_volume": 8e10,
+        "high_24h": 1.0,
+        "low_24h": 0.999,
+        "price_change_percentage_24h": -0.003,
+        "circulating_supply": 1.83e11,
+    },
+    {
+        "id": "dogecoin",
+        "symbol": "doge",
+        "name": "Dogecoin",
+        "image": None,
+        "current_price": 0.1233,
+        "market_cap": 1.8e10,
+        "market_cap_rank": 4,
+        "total_volume": 9e8,
+        "price_change_percentage_24h": 2.0,
+        "circulating_supply": 1.5e11,
+    },
+    {"id": "broken", "symbol": "", "name": "No symbol", "current_price": 1},
+    {"id": "nopx", "symbol": "npx", "name": "No price", "current_price": None},
+]
+
+STEP_FOR = {
+    "ONE_MINUTE": 60,
+    "FIVE_MINUTE": 300,
+    "FIFTEEN_MINUTE": 900,
+    "THIRTY_MINUTE": 1_800,
+    "ONE_HOUR": 3_600,
+    "ONE_DAY": 86_400,
+}
+
+
+def make_cb_candles(start: int, end: int, granularity: str) -> list[dict[str, str]]:
+    """Newest-first candles like Coinbase returns, one per `granularity` bucket in [start, end]."""
+    step = STEP_FOR[granularity]
+    first = (end // step) * step
+    out = []
+    t = first
+    while t >= start:
+        close = 100.0 + (t // step) % 30
+        out.append(
+            {
+                "start": str(t),
+                "open": str(close - 0.5),
+                "high": str(close + 1),
+                "low": str(close - 1),
+                "close": str(close),
+                "volume": "10.5",
+            }
+        )
+        t -= step
+    return out
+
+
+class FakeFetch:
+    """Stand-in for `make_fetcher`: answers Coinbase and CoinGecko URLs from fixtures."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict | None]] = []
+        self.error: Exception | None = None
+
+    def __call__(self, url: str, params: dict | None = None):
+        self.calls.append((url, params))
+        if self.error is not None:
+            raise self.error
+        if url.endswith("/products"):
+            return COINBASE_PRODUCTS
+        if "/products/" in url and url.endswith("/candles"):
+            product = url.split("/products/")[1].split("/")[0]
+            if product not in {"BTC-USD", "ETH-USD", "DOGE-USD"}:
+                raise NotFound(url)
+            assert params is not None
+            return {
+                "candles": make_cb_candles(params["start"], params["end"], params["granularity"])
+            }
+        if url.endswith("/coins/markets"):
+            return list(COINGECKO_MARKETS)
+        raise NotFound(url)
+
+    def urls(self, fragment: str) -> list[str]:
+        return [u for u, _ in self.calls if fragment in u]
