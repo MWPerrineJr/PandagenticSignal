@@ -1,42 +1,23 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
 
+/** The app ships a single brand look (neon green on near-black, mirroring pandagentic.ai).
+ * The type and hook stay so chart palettes keep their theme-keyed lookup. */
 export type Theme = 'dark' | 'light'
-const STORAGE_KEY = 'stock-tool.theme'
 
 interface ThemeContextValue {
   theme: Theme
-  setTheme: (theme: Theme) => void
-  toggle: () => void
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
-function readStoredTheme(fallback: Theme): Theme {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    return stored === 'light' || stored === 'dark' ? stored : fallback
-  } catch {
-    return fallback
-  }
-}
-
-export function ThemeProvider({ children, defaultTheme = 'dark' }: { children: ReactNode; defaultTheme?: Theme }) {
-  const [theme, setThemeState] = useState<Theme>(() => readStoredTheme(defaultTheme))
-
+export function ThemeProvider({ children }: { children: ReactNode; defaultTheme?: Theme }) {
   useEffect(() => {
     const root = document.documentElement
-    root.classList.toggle('dark', theme === 'dark')
-    root.style.colorScheme = theme
-    try {
-      localStorage.setItem(STORAGE_KEY, theme)
-    } catch {
-      // storage unavailable (private mode); the in-memory state still works
-    }
-  }, [theme])
+    root.classList.add('dark')
+    root.style.colorScheme = 'dark'
+  }, [])
 
-  const setTheme = useCallback((next: Theme) => setThemeState(next), [])
-  const toggle = useCallback(() => setThemeState((t) => (t === 'dark' ? 'light' : 'dark')), [])
-  const value = useMemo(() => ({ theme, setTheme, toggle }), [theme, setTheme, toggle])
+  const value = useMemo<ThemeContextValue>(() => ({ theme: 'dark' }), [])
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }

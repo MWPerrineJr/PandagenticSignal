@@ -5,7 +5,6 @@ import { AcknowledgementBar } from '@/features/legal/acknowledgement-bar'
 import { useAuth } from '@/auth/auth-provider'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { UserMenu } from '@/components/layout/user-menu'
 import { TickerSearch } from '@/features/search/ticker-search'
 import { useTicker } from '@/lib/use-ticker'
@@ -68,7 +67,6 @@ export function AppShell() {
           <div className="ml-auto flex items-center gap-2">
             <TickerSearch value={ticker} onSelect={setTicker} className="w-64 sm:w-80" />
             <UserMenu />
-            <ThemeToggle />
           </div>
         </div>
       </header>

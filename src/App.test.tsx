@@ -29,12 +29,10 @@ describe('routing', () => {
     expect(await screen.findByRole('form', { name: 'Sign in' })).toBeInTheDocument()
   })
 
-  it('applies the dark theme by default and toggles', async () => {
-    const user = userEvent.setup()
+  it('always applies the dark brand theme', async () => {
     renderWithProviders(<AppRoutes />)
     expect(document.documentElement).toHaveClass('dark')
-    await user.click(screen.getByRole('button', { name: /switch to light theme/i }))
-    expect(document.documentElement).not.toHaveClass('dark')
+    expect(screen.queryByRole('button', { name: /switch to light theme/i })).not.toBeInTheDocument()
   })
 })
 
