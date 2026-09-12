@@ -48,17 +48,19 @@ function makeSession(id: string, email: string): Session {
 export function seedUser(
   email: string,
   password = 'password123',
-  opts: { disclosureAccepted?: boolean } = {},
+  opts: { disclosureAccepted?: boolean; noProfile?: boolean } = {},
 ): { id: string } {
   const id = uuid()
   state.users.set(email, { id, email, password })
   const accepted = opts.disclosureAccepted ?? true
-  state.tables.profiles!.push({
-    id,
-    display_name: email.split('@')[0],
-    disclosure_accepted_at: accepted ? '2026-01-01T00:00:00Z' : null,
-    disclosure_version: accepted ? 'pre-2026-09-12' : null,
-  })
+  if (!opts.noProfile) {
+    state.tables.profiles!.push({
+      id,
+      display_name: email.split('@')[0],
+      disclosure_accepted_at: accepted ? '2026-01-01T00:00:00Z' : null,
+      disclosure_version: accepted ? 'pre-2026-09-12' : null,
+    })
+  }
   state.tables.watchlists!.push({ id: uuid(), user_id: id, name: 'Watchlist', position: 0 })
   return { id }
 }

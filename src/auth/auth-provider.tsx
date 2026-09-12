@@ -49,11 +49,15 @@ const msg = (error: AuthError | null): string | null => (error ? error.message :
 
 async function stampAcceptance(userId: string) {
   if (!supabase) return { error: 'Accounts are not configured.' }
-  const { error } = await supabase
-    .from('profiles')
-    .update({ disclosure_accepted_at: new Date().toISOString(), disclosure_version: DISCLAIMER_UPDATED })
-    .eq('id', userId)
-  return { error: error ? error.message : null }
+  const patch = { disclosure_accepted_at: new Date().toISOString(), disclosure_version: DISCLAIMER_UPDATED }
+  const { data, error } = await supabase.from('profiles').update(patch).eq('id', userId).select('id')
+  if (error) return { error: error.message }
+  if (!data || data.length === 0) {
+    // No profile row yet (e.g. a fresh social sign-in): create one carrying the acceptance.
+    const { error: insertError } = await supabase.from('profiles').insert({ id: userId, ...patch })
+    if (insertError) return { error: insertError.message }
+  }
+  return { error: null }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
