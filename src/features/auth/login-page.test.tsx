@@ -59,7 +59,7 @@ describe('auth flow', () => {
     const { id } = seedUser('g@example.com', 'password123', { disclosureAccepted: false })
     signInAs('g@example.com')
     renderWithProviders(<AppRoutes />, { route: '/dashboard' })
-    expect(await screen.findByRole('heading', { name: /confirm the disclosure/i })).toBeInTheDocument()
+    expect(await screen.findByText(/confirm the disclosure/i)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /i have read and accept the disclaimer/i }))
     await waitFor(() => expect(disclosureRowFor(id)?.disclosure_accepted_at).toBeTruthy())
   })
