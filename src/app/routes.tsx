@@ -93,6 +93,7 @@ export function AppRoutes() {
             </Suspense>
           }
         />
+        </Route>
         <Route path="login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
