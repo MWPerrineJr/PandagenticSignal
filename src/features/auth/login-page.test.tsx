@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test/render'
-import { seedSymbols, seedUser, signInAs, symbolsFor } from '@/test/supabase-mock'
+import { seedSymbols, seedUser, signInAs, state, symbolsFor } from '@/test/supabase-mock'
 import { AppRoutes } from '@/app/routes'
 import { useTickerStore } from '@/stores/tickers'
 
@@ -46,6 +46,14 @@ describe('auth flow', () => {
     await fillAndSubmit(user, 'new@example.com', 'password123', /create account/i)
     expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
     expect(screen.getByText('new@example.com')).toBeInTheDocument()
+  })
+
+  it('starts Google sign-in with the page the visitor came from', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<AppRoutes />, { route: '/login' })
+    await user.click(screen.getByRole('button', { name: /continue with google/i }))
+    await waitFor(() => expect(state.lastOAuth?.provider).toBe('google'))
+    expect(state.lastOAuth?.options?.redirectTo).toBe(`${window.location.origin}/`)
   })
 
   it('sends a magic link', async () => {
