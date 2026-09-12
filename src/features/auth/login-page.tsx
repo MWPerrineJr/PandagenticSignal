@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 type Mode = 'sign-in' | 'sign-up'
 
 export function LoginPage() {
-  const { status, signInWithPassword, signUp, signInWithOtp } = useAuth()
+  const { status, signInWithPassword, signUp, signInWithOtp, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from ?? '/'
@@ -51,6 +51,18 @@ export function LoginPage() {
         else if (result.needsConfirmation) setNotice('Check your email to confirm the account, then sign in.')
         else navigate(from, { replace: true })
       }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const google = async () => {
+    setBusy(true)
+    setError(null)
+    setNotice(null)
+    try {
+      const result = await signInWithGoogle(from)
+      if (result.error) setError(result.error)
     } finally {
       setBusy(false)
     }
