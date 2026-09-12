@@ -1,6 +1,27 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { AuthError, Session, User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
+import { DISCLAIMER_UPDATED } from '@/content/disclaimer'
+
+/** Set at sign-up when the account has not been confirmed by email yet; stamped on first sign-in. */
+const PENDING_ACCEPT_KEY = 'stock-tool.pending-disclosure'
+
+function readPendingAccept(): string | null {
+  try {
+    return localStorage.getItem(PENDING_ACCEPT_KEY)
+  } catch {
+    return null
+  }
+}
+
+function writePendingAccept(email: string | null) {
+  try {
+    if (email) localStorage.setItem(PENDING_ACCEPT_KEY, email.toLowerCase())
+    else localStorage.removeItem(PENDING_ACCEPT_KEY)
+  } catch {
+    // private mode: the visitor simply confirms again after signing in
+  }
+}
 
 export type AuthStatus = 'disabled' | 'loading' | 'signed-out' | 'signed-in'
 
