@@ -13,7 +13,7 @@ beforeEach(() => {
 
 describe('routing', () => {
   it.each([
-    ['/', 'Dashboard'],
+    ['/dashboard', 'Dashboard'],
     ['/charts', 'Charts'],
     ['/watchlist', /^Watchlist/],
     ['/analysts', 'Analysts'],
@@ -24,9 +24,9 @@ describe('routing', () => {
     expect(screen.getByRole('link', { name: linkName })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('redirects unknown paths to the dashboard', () => {
+  it('redirects unknown paths to the login page', async () => {
     renderWithProviders(<AppRoutes />, { route: '/nope' })
-    expect(screen.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('form', { name: 'Sign in' })).toBeInTheDocument()
   })
 
   it('applies the dark theme by default and toggles', async () => {
@@ -40,13 +40,13 @@ describe('routing', () => {
 
 describe('ticker flow', () => {
   it('shows an empty state without a ticker', () => {
-    renderWithProviders(<AppRoutes />)
+    renderWithProviders(<AppRoutes />, { route: '/dashboard' })
     expect(screen.getAllByText(/no ticker selected/i).length).toBeGreaterThan(0)
   })
 
   it('loads the quote card for ?t= and keeps the ticker across tabs', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<AppRoutes />, { route: '/?t=aapl' })
+    renderWithProviders(<AppRoutes />, { route: '/dashboard?t=aapl' })
     expect(await screen.findByText('$200.00')).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: 'Charts' }))
     expect(await screen.findByRole('heading', { level: 1, name: /^Charts\s*AAPL/ })).toBeInTheDocument()
@@ -55,21 +55,21 @@ describe('ticker flow', () => {
 
   it('selecting from search updates the URL-driven quote', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<AppRoutes />)
+    renderWithProviders(<AppRoutes />, { route: '/dashboard' })
     await user.type(screen.getByRole('combobox', { name: /search symbol/i }), 'msft')
     await user.click(await screen.findByRole('option', { name: /MSFT/ }))
     expect(await screen.findByText('$400.00')).toBeInTheDocument()
   })
 
   it('shows a friendly 404 message for an unknown ticker', async () => {
-    renderWithProviders(<AppRoutes />, { route: '/?t=NOPE' })
+    renderWithProviders(<AppRoutes />, { route: '/dashboard?t=NOPE' })
     const alerts = await screen.findAllByRole('alert')
     expect(alerts.some((a) => /no data for NOPE/i.test(a.textContent ?? ''))).toBe(true)
   })
 
   it('tracks a ticker and lists it on the watchlist', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<AppRoutes />, { route: '/?t=AAPL' })
+    renderWithProviders(<AppRoutes />, { route: '/dashboard?t=AAPL' })
     await user.click(await screen.findByRole('button', { name: 'Track AAPL' }))
     expect(screen.getByRole('button', { name: 'Untrack AAPL' })).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: 'Watchlist' }))

@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/components/layout/app-shell'
+import { useAuth } from '@/auth/auth-provider'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DashboardPage } from '@/features/dashboard/dashboard-page'
 import { WatchlistPage } from '@/features/watchlist/watchlist-page'
@@ -20,11 +21,20 @@ function PageFallback() {
   return <Skeleton className="h-[480px] w-full" aria-busy aria-label="Loading page" />
 }
 
+/** A signed-in account that has not confirmed the disclosure is sent back to the login page. */
+function DisclosureGate() {
+  const { status, disclosureAccepted } = useAuth()
+  if (status === 'signed-in' && disclosureAccepted === false) return <Navigate to="/login" replace />
+  return <Outlet />
+}
+
 export function AppRoutes() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        <Route index element={<DashboardPage />} />
+        <Route index element={<LoginPage />} />
+        <Route element={<DisclosureGate />}>
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route
           path="charts"
           element={
@@ -67,6 +77,7 @@ export function AppRoutes() {
             </Suspense>
           }
         />
+        </Route>
         <Route
           path="faq"
           element={

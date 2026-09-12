@@ -14,25 +14,28 @@ interface State {
   session: Session | null
   listeners: Set<Listener>
   failNextRpc: string | null
+  lastOAuth: { provider: string; options?: { redirectTo?: string; skipBrowserRedirect?: boolean } } | null
 }
 
 let seq = 0
 const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`
 
 export const state: State = {
-  tables: { watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [], indicator_settings: [] },
+  tables: { profiles: [], watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [], indicator_settings: [] },
   users: new Map(),
   session: null,
   listeners: new Set(),
   failNextRpc: null,
+  lastOAuth: null,
 }
 
 export function resetSupabaseMock() {
-  state.tables = { watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [], indicator_settings: [] }
+  state.tables = { profiles: [], watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [], indicator_settings: [] }
   state.users.clear()
   state.session = null
   state.listeners.clear()
   state.failNextRpc = null
+  state.lastOAuth = null
   seq = 0
 }
 
@@ -42,11 +45,28 @@ function makeSession(id: string, email: string): Session {
 }
 
 /** Mirrors the `handle_new_user` trigger: a default watchlist per user. */
-export function seedUser(email: string, password = 'password123'): { id: string } {
+export function seedUser(
+  email: string,
+  password = 'password123',
+  opts: { disclosureAccepted?: boolean; noProfile?: boolean } = {},
+): { id: string } {
   const id = uuid()
   state.users.set(email, { id, email, password })
+  const accepted = opts.disclosureAccepted ?? true
+  if (!opts.noProfile) {
+    state.tables.profiles!.push({
+      id,
+      display_name: email.split('@')[0],
+      disclosure_accepted_at: accepted ? '2026-01-01T00:00:00Z' : null,
+      disclosure_version: accepted ? 'pre-2026-09-12' : null,
+    })
+  }
   state.tables.watchlists!.push({ id: uuid(), user_id: id, name: 'Watchlist', position: 0 })
   return { id }
+}
+
+export function disclosureRowFor(userId: string): Row | undefined {
+  return state.tables.profiles!.find((r) => r.id === userId)
 }
 
 export function seedSymbols(userId: string, symbols: string[]) {
@@ -227,13 +247,17 @@ const auth = {
   },
   signUp: async ({ email, password }: { email: string; password: string }) => {
     if (state.users.has(email)) return { data: { session: null, user: null }, error: { message: 'User already registered' } }
-    const { id } = seedUser(email, password)
+    const { id } = seedUser(email, password, { disclosureAccepted: false })
     const session = makeSession(id, email)
     setSession(session, 'SIGNED_IN')
     return { data: { session, user: session.user }, error: null }
   },
   signInWithOtp: async ({ email }: { email: string }) =>
     email.includes('@') ? { data: {}, error: null } : { data: {}, error: { message: 'Invalid email' } },
+  signInWithOAuth: async (opts: { provider: string; options?: { redirectTo?: string; skipBrowserRedirect?: boolean } }) => {
+    state.lastOAuth = opts
+    return { data: { url: 'https://accounts.google.com/mock-oauth', provider: opts.provider }, error: null }
+  },
   signOut: async () => {
     setSession(null, 'SIGNED_OUT')
     return { error: null }

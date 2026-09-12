@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test/render'
-import { seedSymbols, seedUser, signInAs, symbolsFor } from '@/test/supabase-mock'
+import { disclosureRowFor, seedSymbols, seedUser, signInAs, state, symbolsFor } from '@/test/supabase-mock'
 import { AppRoutes } from '@/app/routes'
 import { useTickerStore } from '@/stores/tickers'
 
@@ -28,7 +28,7 @@ describe('auth flow', () => {
     await fillAndSubmit(user, 'a@example.com', 'password123', /^sign in$/i)
     expect(await screen.findByRole('heading', { level: 1, name: /^Watchlist/ })).toBeInTheDocument()
     expect(screen.getByText('a@example.com')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument()
   })
 
   it('shows the error for a wrong password', async () => {
@@ -39,13 +39,47 @@ describe('auth flow', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/invalid login credentials/i)
   })
 
-  it('creates an account and lands on the dashboard', async () => {
+  it('creates an account after the disclosure is confirmed and records the acceptance', async () => {
     const user = userEvent.setup()
     renderWithProviders(<AppRoutes />, { route: '/login' })
     await user.click(screen.getByRole('button', { name: /create one/i }))
-    await fillAndSubmit(user, 'new@example.com', 'password123', /create account/i)
+    await user.type(screen.getByLabelText('Email'), 'new@example.com')
+    await user.type(screen.getByLabelText('Password'), 'password123')
+    expect(screen.getByRole('button', { name: /create account/i })).toBeDisabled()
+    await user.click(screen.getByLabelText(/i have read and accept the disclaimer/i))
+    await user.click(screen.getByRole('button', { name: /create account/i }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
     expect(screen.getByText('new@example.com')).toBeInTheDocument()
+    const id = state.users.get('new@example.com')!.id
+    await waitFor(() => expect(disclosureRowFor(id)?.disclosure_accepted_at).toBeTruthy())
+  })
+
+  it('asks a signed-in account that never accepted to confirm before the dashboard opens', async () => {
+    const user = userEvent.setup()
+    const { id } = seedUser('g@example.com', 'password123', { disclosureAccepted: false })
+    signInAs('g@example.com')
+    renderWithProviders(<AppRoutes />, { route: '/dashboard' })
+    expect(await screen.findByText(/confirm the disclosure/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /i have read and accept the disclaimer/i }))
+    await waitFor(() => expect(disclosureRowFor(id)?.disclosure_accepted_at).toBeTruthy())
+  })
+
+  it('asks a signed-in account with no profile row to confirm and records the acceptance', async () => {
+    const user = userEvent.setup()
+    const { id } = seedUser('fresh@example.com', 'password123', { noProfile: true })
+    signInAs('fresh@example.com')
+    renderWithProviders(<AppRoutes />, { route: '/dashboard' })
+    expect(await screen.findByText(/confirm the disclosure/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /i have read and accept the disclaimer/i }))
+    await waitFor(() => expect(disclosureRowFor(id)?.disclosure_accepted_at).toBeTruthy())
+  })
+
+  it('starts Google sign-in with the page the visitor came from', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<AppRoutes />, { route: '/login' })
+    await user.click(screen.getByRole('button', { name: /continue with google/i }))
+    await waitFor(() => expect(state.lastOAuth?.provider).toBe('google'))
+    expect(state.lastOAuth?.options?.redirectTo).toBe(`${window.location.origin}/dashboard`)
   })
 
   it('sends a magic link', async () => {
@@ -70,7 +104,7 @@ describe('auth flow', () => {
     await user.click(screen.getByRole('button', { name: 'Remove MSFT' }))
     await waitFor(() => expect(symbolsFor(id)).toEqual([]))
 
-    await user.click(screen.getByRole('button', { name: /sign out/i }))
+    await user.click(screen.getByRole('button', { name: /log out/i }))
     expect(await screen.findByTestId('row-AAPL')).toBeInTheDocument()
     expect(screen.getByText(/saved in this browser/i)).toBeInTheDocument()
   })
