@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LogOutIcon, UserIcon } from 'lucide-react'
+import { UserIcon } from 'lucide-react'
 import { useAuth } from '@/auth/auth-provider'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export function UserMenu() {
