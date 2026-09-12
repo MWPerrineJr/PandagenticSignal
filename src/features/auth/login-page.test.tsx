@@ -28,7 +28,7 @@ describe('auth flow', () => {
     await fillAndSubmit(user, 'a@example.com', 'password123', /^sign in$/i)
     expect(await screen.findByRole('heading', { level: 1, name: /^Watchlist/ })).toBeInTheDocument()
     expect(screen.getByText('a@example.com')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument()
   })
 
   it('shows the error for a wrong password', async () => {
