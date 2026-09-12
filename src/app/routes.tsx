@@ -33,6 +33,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<LoginPage />} />
+        <Route element={<DisclosureGate />}>
         <Route path="dashboard" element={<DashboardPage />} />
         <Route
           path="charts"
