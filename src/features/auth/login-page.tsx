@@ -1,26 +1,75 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ActivityIcon } from 'lucide-react'
 import { useAuth } from '@/auth/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { DISCLAIMER_SHORT } from '@/content/disclaimer'
 
 type Mode = 'sign-in' | 'sign-up'
 
+/** Shown to a signed-in account that has never confirmed the disclosure (e.g. a new Google user). */
+function ConfirmDisclosure() {
+  const { acceptDisclosure, signOut } = useAuth()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const confirm = async () => {
+    setBusy(true)
+    setError(null)
+    const result = await acceptDisclosure()
+    if (result.error) setError(result.error)
+    setBusy(false)
+  }
+  return (
+    <div className="flex min-h-[calc(100svh-3.5rem)] flex-col items-center justify-center px-4 py-12">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Confirm the disclosure</CardTitle>
+          <CardDescription>One step before you start using your account.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {DISCLAIMER_SHORT}{' '}
+            <Link to="/disclaimer" className="underline underline-offset-4">
+              Read the full disclaimer
+            </Link>
+            .
+          </p>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={busy} onClick={confirm}>
+              I have read and accept the disclaimer
+            </Button>
+            <Button variant="ghost" disabled={busy} onClick={() => void signOut()}>
+              Sign out
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 export function LoginPage() {
-  const { status, signInWithPassword, signUp, signInWithOtp, signInWithGoogle } = useAuth()
+  const { status, disclosureAccepted, signInWithPassword, signUp, signInWithOtp, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from ?? '/dashboard'
   const [mode, setMode] = useState<Mode>('sign-in')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [accepted, setAccepted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  if (status === 'signed-in') return <Navigate to={from} replace />
+  if (status === 'signed-in' && disclosureAccepted === false) return <ConfirmDisclosure />
+  if (status === 'signed-in' && disclosureAccepted !== null) return <Navigate to={from} replace />
 
   if (status === 'disabled') {
     return (
@@ -49,7 +98,7 @@ export function LoginPage() {
         if (result.error) setError(result.error)
         else navigate(from, { replace: true })
       } else {
-        const result = await signUp(email, password)
+        const result = await signUp(email, password, accepted)
         if (result.error) setError(result.error)
         else if (result.needsConfirmation) setNotice('Check your email to confirm the account, then sign in.')
         else navigate(from, { replace: true })
@@ -135,11 +184,34 @@ export function LoginPage() {
                 {notice}
               </p>
             )}
+            {mode === 'sign-up' && (
+              <div className="flex items-start gap-2 rounded-md border p-3">
+                <input
+                  id="accept-disclosure"
+                  type="checkbox"
+                  className="mt-1 size-4 accent-primary"
+                  checked={accepted}
+                  onChange={(e) => setAccepted(e.target.checked)}
+                />
+                <label htmlFor="accept-disclosure" className="text-sm text-muted-foreground">
+                  I have read and accept the disclaimer. {DISCLAIMER_SHORT}{' '}
+                  <Link to="/disclaimer" className="underline underline-offset-4">
+                    Read it in full
+                  </Link>
+                  .
+                </label>
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-2">
-              <Button type="submit" disabled={busy}>
+              <Button type="submit" disabled={busy || (mode === 'sign-up' && !accepted)}>
                 {mode === 'sign-in' ? 'Sign in' : 'Create account'}
               </Button>
-              <Button type="button" variant="ghost" disabled={busy || !email} onClick={magicLink}>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={busy || !email || (mode === 'sign-up' && !accepted)}
+                onClick={magicLink}
+              >
                 Email me a magic link
               </Button>
             </div>

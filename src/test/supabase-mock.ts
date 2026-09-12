@@ -21,7 +21,7 @@ let seq = 0
 const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`
 
 export const state: State = {
-  tables: { watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [], indicator_settings: [] },
+  tables: { profiles: [], watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [], indicator_settings: [] },
   users: new Map(),
   session: null,
   listeners: new Set(),
@@ -30,7 +30,7 @@ export const state: State = {
 }
 
 export function resetSupabaseMock() {
-  state.tables = { watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [], indicator_settings: [] }
+  state.tables = { profiles: [], watchlists: [], watchlist_items: [], dashboard_layouts: [], portfolios: [], indicator_settings: [] }
   state.users.clear()
   state.session = null
   state.listeners.clear()
@@ -45,11 +45,26 @@ function makeSession(id: string, email: string): Session {
 }
 
 /** Mirrors the `handle_new_user` trigger: a default watchlist per user. */
-export function seedUser(email: string, password = 'password123'): { id: string } {
+export function seedUser(
+  email: string,
+  password = 'password123',
+  opts: { disclosureAccepted?: boolean } = {},
+): { id: string } {
   const id = uuid()
   state.users.set(email, { id, email, password })
+  const accepted = opts.disclosureAccepted ?? true
+  state.tables.profiles!.push({
+    id,
+    display_name: email.split('@')[0],
+    disclosure_accepted_at: accepted ? '2026-01-01T00:00:00Z' : null,
+    disclosure_version: accepted ? 'pre-2026-09-12' : null,
+  })
   state.tables.watchlists!.push({ id: uuid(), user_id: id, name: 'Watchlist', position: 0 })
   return { id }
+}
+
+export function disclosureRowFor(userId: string): Row | undefined {
+  return state.tables.profiles!.find((r) => r.id === userId)
 }
 
 export function seedSymbols(userId: string, symbols: string[]) {
@@ -230,7 +245,7 @@ const auth = {
   },
   signUp: async ({ email, password }: { email: string; password: string }) => {
     if (state.users.has(email)) return { data: { session: null, user: null }, error: { message: 'User already registered' } }
-    const { id } = seedUser(email, password)
+    const { id } = seedUser(email, password, { disclosureAccepted: false })
     const session = makeSession(id, email)
     setSession(session, 'SIGNED_IN')
     return { data: { session, user: session.user }, error: null }
