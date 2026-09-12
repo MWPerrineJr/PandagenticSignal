@@ -88,6 +88,14 @@ export function LoginPage() {
         <CardDescription>Sync your watchlist and dashboard across devices.</CardDescription>
       </CardHeader>
       <CardContent>
+        <Button type="button" variant="outline" className="w-full" disabled={busy} onClick={google}>
+          Continue with Google
+        </Button>
+        <div className="my-4 flex items-center gap-3" aria-hidden>
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">or with email</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
         <form onSubmit={submit} className="space-y-3" aria-label={mode === 'sign-in' ? 'Sign in' : 'Create account'}>
           <div className="space-y-1">
             <label htmlFor="email" className="text-sm font-medium">
