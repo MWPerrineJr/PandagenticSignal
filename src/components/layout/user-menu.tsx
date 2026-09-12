@@ -20,13 +20,8 @@ export function UserMenu() {
     )
   }
   return (
-    <div className="flex items-center gap-1">
-      <span className="hidden max-w-40 truncate text-xs text-muted-foreground md:inline" title={user?.email ?? ''}>
-        {user?.email}
-      </span>
-      <Button variant="ghost" size="icon" aria-label="Sign out" title="Sign out" onClick={() => void signOut()}>
-        <LogOutIcon />
-      </Button>
-    </div>
+    <span className="hidden max-w-40 truncate text-xs text-muted-foreground md:inline" title={user?.email ?? ''}>
+      {user?.email}
+    </span>
   )
 }
