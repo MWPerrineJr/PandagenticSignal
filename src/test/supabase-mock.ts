@@ -26,6 +26,7 @@ export const state: State = {
   session: null,
   listeners: new Set(),
   failNextRpc: null,
+  lastOAuth: null,
 }
 
 export function resetSupabaseMock() {
@@ -34,6 +35,7 @@ export function resetSupabaseMock() {
   state.session = null
   state.listeners.clear()
   state.failNextRpc = null
+  state.lastOAuth = null
   seq = 0
 }
 
@@ -235,6 +237,10 @@ const auth = {
   },
   signInWithOtp: async ({ email }: { email: string }) =>
     email.includes('@') ? { data: {}, error: null } : { data: {}, error: { message: 'Invalid email' } },
+  signInWithOAuth: async (opts: { provider: string; options?: { redirectTo?: string; skipBrowserRedirect?: boolean } }) => {
+    state.lastOAuth = opts
+    return { data: { url: 'https://accounts.google.com/mock-oauth', provider: opts.provider }, error: null }
+  },
   signOut: async () => {
     setSession(null, 'SIGNED_OUT')
     return { error: null }

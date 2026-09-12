@@ -66,13 +66,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: msg(error) }
   }, [])
 
+  const signInWithGoogle = useCallback(async (from: string): Promise<AuthResult> => {
+    if (!supabase) return { error: 'Accounts are not configured.' }
+    const path = from.startsWith('/') ? from : '/'
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + path, skipBrowserRedirect: true },
+    })
+    if (error) return { error: msg(error) }
+    if (data.url) {
+      try {
+        window.location.assign(data.url)
+      } catch {
+        // jsdom cannot navigate externally; tests assert the recorded OAuth call instead.
+      }
+    }
+    return { error: null }
+  }, [])
+
   const signOut = useCallback(async () => {
     await supabase?.auth.signOut()
   }, [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, session, user: session?.user ?? null, signInWithPassword, signUp, signInWithOtp, signOut }),
-    [status, session, signInWithPassword, signUp, signInWithOtp, signOut],
+    () => ({ status, session, user: session?.user ?? null, signInWithPassword, signUp, signInWithOtp, signInWithGoogle, signOut }),
+    [status, session, signInWithPassword, signUp, signInWithOtp, signInWithGoogle, signOut],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
