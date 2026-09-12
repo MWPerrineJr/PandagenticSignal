@@ -5,7 +5,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export function UserMenu() {
-  const { status, user, signOut } = useAuth()
+  const { status, user } = useAuth()
   const location = useLocation()
   if (status === 'disabled' || status === 'loading') return null
   if (status === 'signed-out') {
