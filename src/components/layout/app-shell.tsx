@@ -1,8 +1,10 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { ActivityIcon } from 'lucide-react'
+import { ActivityIcon, LogOutIcon } from 'lucide-react'
 import { DISCLAIMER_SHORT } from '@/content/disclaimer'
 import { AcknowledgementBar } from '@/features/legal/acknowledgement-bar'
+import { useAuth } from '@/auth/auth-provider'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { UserMenu } from '@/components/layout/user-menu'
 import { TickerSearch } from '@/features/search/ticker-search'
@@ -23,15 +25,30 @@ export const NAV_ITEMS = [
 export function AppShell() {
   const { search } = useLocation()
   const [ticker, setTicker] = useTicker()
+  const { status, signOut } = useAuth()
+  const signedIn = status === 'signed-in'
 
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-4 px-4">
-          <NavLink to={{ pathname: '/', search }} className="flex items-center gap-2 font-semibold">
-            <ActivityIcon className="size-5" aria-hidden />
-            <span className="hidden sm:inline">Pandagentic Signal</span>
-          </NavLink>
+          <div className="flex flex-col">
+            <NavLink to={{ pathname: '/', search }} className="flex items-center gap-2 font-semibold">
+              <ActivityIcon className="size-5" aria-hidden />
+              <span className="hidden sm:inline">Pandagentic Signal</span>
+            </NavLink>
+            {signedIn && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto justify-start px-0 py-0 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => void signOut()}
+              >
+                <LogOutIcon className="mr-1 size-3" />
+                Log out
+              </Button>
+            )}
+          </div>
           <nav aria-label="Primary" className="flex items-center gap-1">
             {NAV_ITEMS.map((item) => (
               <NavLink
