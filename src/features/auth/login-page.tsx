@@ -98,7 +98,7 @@ export function LoginPage() {
         if (result.error) setError(result.error)
         else navigate(from, { replace: true })
       } else {
-        const result = await signUp(email, password)
+        const result = await signUp(email, password, accepted)
         if (result.error) setError(result.error)
         else if (result.needsConfirmation) setNotice('Check your email to confirm the account, then sign in.')
         else navigate(from, { replace: true })
