@@ -21,6 +21,13 @@ function PageFallback() {
   return <Skeleton className="h-[480px] w-full" aria-busy aria-label="Loading page" />
 }
 
+/** A signed-in account that has not confirmed the disclosure is sent back to the login page. */
+function DisclosureGate() {
+  const { status, disclosureAccepted } = useAuth()
+  if (status === 'signed-in' && disclosureAccepted === false) return <Navigate to="/login" replace />
+  return <Outlet />
+}
+
 export function AppRoutes() {
   return (
     <Routes>
