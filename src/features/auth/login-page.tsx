@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 type Mode = 'sign-in' | 'sign-up'
 
 export function LoginPage() {
-  const { status, signInWithPassword, signUp, signInWithOtp } = useAuth()
+  const { status, signInWithPassword, signUp, signInWithOtp, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from ?? '/'
@@ -56,6 +56,18 @@ export function LoginPage() {
     }
   }
 
+  const google = async () => {
+    setBusy(true)
+    setError(null)
+    setNotice(null)
+    try {
+      const result = await signInWithGoogle(from)
+      if (result.error) setError(result.error)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const magicLink = async () => {
     setBusy(true)
     setError(null)
@@ -76,6 +88,14 @@ export function LoginPage() {
         <CardDescription>Sync your watchlist and dashboard across devices.</CardDescription>
       </CardHeader>
       <CardContent>
+        <Button type="button" variant="outline" className="w-full" disabled={busy} onClick={google}>
+          Continue with Google
+        </Button>
+        <div className="my-4 flex items-center gap-3" aria-hidden>
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">or with email</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
         <form onSubmit={submit} className="space-y-3" aria-label={mode === 'sign-in' ? 'Sign in' : 'Create account'}>
           <div className="space-y-1">
             <label htmlFor="email" className="text-sm font-medium">
