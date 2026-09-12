@@ -104,7 +104,7 @@ describe('auth flow', () => {
     await user.click(screen.getByRole('button', { name: 'Remove MSFT' }))
     await waitFor(() => expect(symbolsFor(id)).toEqual([]))
 
-    await user.click(screen.getByRole('button', { name: /sign out/i }))
+    await user.click(screen.getByRole('button', { name: /log out/i }))
     expect(await screen.findByTestId('row-AAPL')).toBeInTheDocument()
     expect(screen.getByText(/saved in this browser/i)).toBeInTheDocument()
   })
