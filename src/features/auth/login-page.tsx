@@ -184,11 +184,34 @@ export function LoginPage() {
                 {notice}
               </p>
             )}
+            {mode === 'sign-up' && (
+              <div className="flex items-start gap-2 rounded-md border p-3">
+                <input
+                  id="accept-disclosure"
+                  type="checkbox"
+                  className="mt-1 size-4 accent-primary"
+                  checked={accepted}
+                  onChange={(e) => setAccepted(e.target.checked)}
+                />
+                <label htmlFor="accept-disclosure" className="text-sm text-muted-foreground">
+                  I have read and accept the disclaimer. {DISCLAIMER_SHORT}{' '}
+                  <Link to="/disclaimer" className="underline underline-offset-4">
+                    Read it in full
+                  </Link>
+                  .
+                </label>
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-2">
-              <Button type="submit" disabled={busy}>
+              <Button type="submit" disabled={busy || (mode === 'sign-up' && !accepted)}>
                 {mode === 'sign-in' ? 'Sign in' : 'Create account'}
               </Button>
-              <Button type="button" variant="ghost" disabled={busy || !email} onClick={magicLink}>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={busy || !email || (mode === 'sign-up' && !accepted)}
+                onClick={magicLink}
+              >
                 Email me a magic link
               </Button>
             </div>
