@@ -9,7 +9,7 @@ import { TickerSearch } from '@/features/search/ticker-search'
 import { useTicker } from '@/lib/use-ticker'
 
 export const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', end: true },
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/charts', label: 'Charts' },
   { to: '/watchlist', label: 'Watchlist' },
   { to: '/analysts', label: 'Analysts' },
