@@ -64,6 +64,16 @@ describe('auth flow', () => {
     await waitFor(() => expect(disclosureRowFor(id)?.disclosure_accepted_at).toBeTruthy())
   })
 
+  it('asks a signed-in account with no profile row to confirm and records the acceptance', async () => {
+    const user = userEvent.setup()
+    const { id } = seedUser('fresh@example.com', 'password123', { noProfile: true })
+    signInAs('fresh@example.com')
+    renderWithProviders(<AppRoutes />, { route: '/dashboard' })
+    expect(await screen.findByText(/confirm the disclosure/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /i have read and accept the disclaimer/i }))
+    await waitFor(() => expect(disclosureRowFor(id)?.disclosure_accepted_at).toBeTruthy())
+  })
+
   it('starts Google sign-in with the page the visitor came from', async () => {
     const user = userEvent.setup()
     renderWithProviders(<AppRoutes />, { route: '/login' })
