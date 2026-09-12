@@ -14,6 +14,7 @@ interface State {
   session: Session | null
   listeners: Set<Listener>
   failNextRpc: string | null
+  lastOAuth: { provider: string; options?: { redirectTo?: string; skipBrowserRedirect?: boolean } } | null
 }
 
 let seq = 0

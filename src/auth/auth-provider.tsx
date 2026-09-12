@@ -15,6 +15,7 @@ export interface AuthContextValue {
   signInWithPassword: (email: string, password: string) => Promise<AuthResult>
   signUp: (email: string, password: string) => Promise<AuthResult & { needsConfirmation: boolean }>
   signInWithOtp: (email: string) => Promise<AuthResult>
+  signInWithGoogle: (from: string) => Promise<AuthResult>
   signOut: () => Promise<void>
 }
 
