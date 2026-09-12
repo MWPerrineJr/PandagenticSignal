@@ -53,7 +53,7 @@ describe('auth flow', () => {
     renderWithProviders(<AppRoutes />, { route: '/login' })
     await user.click(screen.getByRole('button', { name: /continue with google/i }))
     await waitFor(() => expect(state.lastOAuth?.provider).toBe('google'))
-    expect(state.lastOAuth?.options?.redirectTo).toBe(`${window.location.origin}/`)
+    expect(state.lastOAuth?.options?.redirectTo).toBe(`${window.location.origin}/dashboard`)
   })
 
   it('sends a magic link', async () => {

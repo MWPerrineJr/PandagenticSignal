@@ -24,7 +24,8 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        <Route index element={<DashboardPage />} />
+        <Route index element={<LoginPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route
           path="charts"
           element={
