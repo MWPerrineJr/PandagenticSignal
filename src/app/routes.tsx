@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/components/layout/app-shell'
+import { useAuth } from '@/auth/auth-provider'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DashboardPage } from '@/features/dashboard/dashboard-page'
 import { WatchlistPage } from '@/features/watchlist/watchlist-page'
