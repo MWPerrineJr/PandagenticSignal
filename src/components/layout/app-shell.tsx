@@ -68,7 +68,6 @@ export function AppShell() {
           <div className="ml-auto flex items-center gap-2">
             <TickerSearch value={ticker} onSelect={setTicker} className="w-64 sm:w-80" />
             <UserMenu />
-            <ThemeToggle />
           </div>
         </div>
       </header>
