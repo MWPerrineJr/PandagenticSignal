@@ -19,7 +19,7 @@ const widgets = () => screen.getAllByTestId(/^widget-/)
 describe('DashboardPage', () => {
   it('renders the starter layout with live widgets', async () => {
     useTickerStore.getState().add('MSFT')
-    renderWithProviders(<AppRoutes />, { route: '/?t=AAPL' })
+    renderWithProviders(<AppRoutes />, { route: '/dashboard?t=AAPL' })
     await screen.findByTestId('dashboard-grid')
     await waitFor(() => expect(widgets()).toHaveLength(4))
     expect(screen.getByRole('region', { name: 'Quote' })).toHaveTextContent('AAPL')
@@ -31,7 +31,7 @@ describe('DashboardPage', () => {
 
   it('edit mode adds, configures and removes widgets', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<AppRoutes />, { route: '/?t=AAPL' })
+    renderWithProviders(<AppRoutes />, { route: '/dashboard?t=AAPL' })
     await waitFor(() => expect(widgets()).toHaveLength(4))
     expect(screen.queryByRole('button', { name: /remove quote widget/i })).not.toBeInTheDocument()
 
@@ -60,7 +60,7 @@ describe('DashboardPage', () => {
     const layout = starterLayout()
     layout.widgets.push({ id: 'x', type: 'heatmap', config: {}, grid: { x: 0, y: 20, w: 6, h: 4 } })
     store.upsert({ ...store.layouts[0]!, layout })
-    renderWithProviders(<AppRoutes />, { route: '/' })
+    renderWithProviders(<AppRoutes />, { route: '/dashboard' })
     await waitFor(() => expect(widgets()).toHaveLength(5))
     expect(screen.getByRole('note')).toHaveTextContent(/unknown widget type heatmap/i)
   })
@@ -68,7 +68,7 @@ describe('DashboardPage', () => {
   it('switches between named layouts', async () => {
     const user = userEvent.setup()
     vi.spyOn(window, 'prompt').mockReturnValue('Second')
-    renderWithProviders(<AppRoutes />, { route: '/' })
+    renderWithProviders(<AppRoutes />, { route: '/dashboard' })
     await waitFor(() => expect(widgets()).toHaveLength(4))
     await user.click(screen.getByRole('button', { name: /edit layout/i }))
     await user.click(screen.getByRole('button', { name: /new layout/i }))
