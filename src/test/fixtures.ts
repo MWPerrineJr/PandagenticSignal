@@ -124,12 +124,21 @@ export function makeIndicators(symbol = 'AAPL', n = 30, tokens: readonly string[
     interval: '1d',
     candles,
     series,
-    levels: tokens.includes('sr')
-      ? [
-          { price: 105, touches: 4, kind: 'resistance' },
-          { price: 95, touches: 3, kind: 'support' },
-        ]
-      : [],
+    levels: [
+      ...(tokens.includes('sr')
+        ? [
+            { price: 105, touches: 4, kind: 'resistance' as const },
+            { price: 95, touches: 3, kind: 'support' as const },
+          ]
+        : []),
+      ...(tokens.includes('fib')
+        ? [
+            { price: 110, touches: 0, kind: 'fib' as const, label: '0%' },
+            { price: 100, touches: 0, kind: 'fib' as const, label: '50%' },
+            { price: 90, touches: 0, kind: 'fib' as const, label: '100%' },
+          ]
+        : []),
+    ],
   }
 }
 

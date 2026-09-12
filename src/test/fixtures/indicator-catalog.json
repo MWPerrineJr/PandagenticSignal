@@ -215,6 +215,16 @@
       "formula": "local extrema (±5 bars) clustered within 1% of price"
     },
     {
+      "id": "fib",
+      "name": "Fibonacci retracement",
+      "kind": "overlay",
+      "outputs": [],
+      "params": [],
+      "reference_lines": [],
+      "description": "Horizontal levels at the standard Fibonacci ratios between the period's swing high and low, auto-anchored to whichever extreme came first.",
+      "formula": "level = high − ratio·(high−low) [uptrend] or low + ratio·(high−low) [downtrend], ratio ∈ {0, 23.6, 38.2, 50, 61.8, 78.6, 100}%"
+    },
+    {
       "id": "pivot",
       "name": "Pivot points",
       "kind": "overlay",

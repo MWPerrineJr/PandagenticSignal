@@ -98,11 +98,23 @@ def test_indicators_requested_tokens(client: TestClient) -> None:
     assert body["levels"] == []  # sr not requested
 
 
+def test_indicators_fib_levels(client: TestClient) -> None:
+    r = client.get("/indicators/AAPL", params={"ind": "fib"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["series"]["fib"]["outputs"] == {}
+    labels = [lv["label"] for lv in body["levels"]]
+    assert labels == ["0%", "23.6%", "38.2%", "50%", "61.8%", "78.6%", "100%"]
+    assert all(lv["kind"] == "fib" for lv in body["levels"])
+    prices = [lv["price"] for lv in body["levels"]]
+    assert prices == sorted(prices) or prices == sorted(prices, reverse=True)
+
+
 def test_indicators_catalog(client: TestClient) -> None:
     r = client.get("/indicators/catalog")
     assert r.status_code == 200
     body = r.json()
-    assert len(body["indicators"]) == 20
+    assert len(body["indicators"]) == 21
     assert body["defaults"] == ["ema:10", "ema:30", "ema:60", "ema:90", "bb:20-2", "sr"]
     assert body["max_per_request"] == 8
     rsi = next(i for i in body["indicators"] if i["id"] == "rsi")

@@ -111,8 +111,8 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         q: 'Technical indicators',
         a: [
-          'All twenty indicators are computed on our server from the same candles, using the textbook definitions listed in the catalog below (Wilder smoothing for RSI, ATR and ADX; population standard deviation for Bollinger Bands; slow stochastic; classic floor-trader pivots from the previous bar). Values are blank until the indicator has enough history to warm up.',
-          'VWAP resets each session on intraday bars and accumulates from the first bar shown on daily and weekly charts. The Ichimoku cloud is shifted forward within the visible range, so the last 26 bars show no cloud. Support and resistance levels are clusters of local highs and lows within 2% of each other, ranked by how often price touched them.',
+          'All twenty-one indicators are computed on our server from the same candles, using the textbook definitions listed in the catalog below (Wilder smoothing for RSI, ATR and ADX; population standard deviation for Bollinger Bands; slow stochastic; classic floor-trader pivots from the previous bar). Values are blank until the indicator has enough history to warm up.',
+          'VWAP resets each session on intraday bars and accumulates from the first bar shown on daily and weekly charts. The Ichimoku cloud is shifted forward within the visible range, so the last 26 bars show no cloud. Support and resistance levels are clusters of local highs and lows within 2% of each other, ranked by how often price touched them. The Fibonacci retracement draws the standard ratios (23.6/38.2/50/61.8/78.6%) between the period\'s swing high and low, auto-anchored to whichever extreme came first — no trendline to draw by hand.',
         ],
       },
       {

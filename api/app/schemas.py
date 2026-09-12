@@ -217,7 +217,9 @@ class History(BaseModel):
 class LevelOut(BaseModel):
     price: float
     touches: int
-    kind: Literal["support", "resistance"]
+    kind: Literal["support", "resistance", "fib"]
+    #: Ratio label ("61.8%") for fib levels; unset for support/resistance.
+    label: str | None = None
 
 
 class IndicatorSeriesOut(BaseModel):
@@ -236,7 +238,7 @@ class Indicators(BaseModel):
     candles: list[Candle]
     #: Requested indicators in request order, keyed by canonical token (`rsi:14`, `bb:20-2`).
     series: dict[str, IndicatorSeriesOut]
-    #: Support/resistance levels; populated only when the `sr` token is requested.
+    #: Support/resistance and fib retracement levels; populated when `sr`/`fib` are requested.
     levels: list[LevelOut]
 
 

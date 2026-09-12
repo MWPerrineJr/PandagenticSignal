@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
+import pytest
 
-from app.services.levels import Level, support_resistance
+from app.services.levels import Level, fib_retracement, support_resistance
 
 
 def oscillating_frame(cycles: int = 4, period: int = 20) -> pd.DataFrame:
@@ -69,3 +70,38 @@ def test_tolerance_merges_nearby_levels() -> None:
     tight = support_resistance(df, tolerance=0.0001, max_levels=50)
     loose = support_resistance(df, tolerance=0.05, max_levels=50)
     assert len(loose) <= len(tight)
+
+
+def trending_frame(low: float, high: float, n: int = 30, uptrend: bool = True) -> pd.DataFrame:
+    """A straight ramp from `low` to `high` (or the reverse), so the swing is unambiguous."""
+    x = np.linspace(0, 1, n)
+    close = low + x * (high - low) if uptrend else high - x * (high - low)
+    return pd.DataFrame({"Open": close, "High": close + 0.01, "Low": close - 0.01, "Close": close})
+
+
+def test_fib_retracement_uptrend_anchors_0pct_at_the_high() -> None:
+    df = trending_frame(100, 200, uptrend=True)
+    levels = fib_retracement(df)
+    assert [lv.kind for lv in levels] == ["fib"] * 7
+    by_label = {lv.label: lv.price for lv in levels}
+    assert by_label["0%"] == df["High"].max()
+    assert by_label["100%"] == df["Low"].min()
+    assert by_label["50%"] == pytest.approx((df["High"].max() + df["Low"].min()) / 2, abs=0.5)
+
+
+def test_fib_retracement_downtrend_anchors_0pct_at_the_low() -> None:
+    df = trending_frame(100, 200, uptrend=False)
+    levels = fib_retracement(df)
+    by_label = {lv.label: lv.price for lv in levels}
+    assert by_label["0%"] == df["Low"].min()
+    assert by_label["100%"] == df["High"].max()
+
+
+def test_fib_retracement_flat_series_returns_empty() -> None:
+    df = pd.DataFrame({"Open": 50.0, "High": 50.0, "Low": 50.0, "Close": 50.0}, index=range(10))
+    assert fib_retracement(df) == []
+
+
+def test_fib_retracement_empty_frame_returns_empty() -> None:
+    df = pd.DataFrame({"Open": [], "High": [], "Low": [], "Close": []})
+    assert fib_retracement(df) == []

@@ -31,7 +31,7 @@ describe('FaqPage', () => {
   it('shows the indicator catalog from the API and links to the disclaimer', async () => {
     renderWithProviders(<AppRoutes />, { route: '/faq' })
     const catalog = await screen.findByRole('table', { name: 'Indicator definitions' })
-    expect(within(catalog).getAllByRole('row')).toHaveLength(21)
+    expect(within(catalog).getAllByRole('row')).toHaveLength(22)
     const rsiRow = within(catalog).getByText('RSI', { selector: 'div' }).closest('tr')!
     expect(within(rsiRow).getByText('period 14')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /read the full disclaimer/i })).toHaveAttribute('href', '/disclaimer')

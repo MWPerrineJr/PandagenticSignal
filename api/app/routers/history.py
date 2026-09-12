@@ -14,7 +14,7 @@ from app.schemas import (
     Period,
 )
 from app.services import indicators as ind
-from app.services.levels import support_resistance
+from app.services.levels import fib_retracement, support_resistance
 from app.services.market_data import frame_to_candles
 
 router = APIRouter(tags=["history"])
@@ -73,10 +73,15 @@ def indicators(
     levels: list[LevelOut] = []
     for req in requests:
         if req.spec.id == "sr":
-            levels = [
-                LevelOut(price=lv.price, touches=lv.touches, kind=lv.kind)
+            levels.extend(
+                LevelOut(price=lv.price, touches=lv.touches, kind=lv.kind, label=lv.label)
                 for lv in support_resistance(df)
-            ]
+            )
+        elif req.spec.id == "fib":
+            levels.extend(
+                LevelOut(price=lv.price, touches=lv.touches, kind=lv.kind, label=lv.label)
+                for lv in fib_retracement(df)
+            )
         try:
             frame = ind.compute(req, df)
         except ind.IndicatorError as exc:

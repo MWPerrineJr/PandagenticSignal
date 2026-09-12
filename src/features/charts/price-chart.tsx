@@ -179,7 +179,7 @@ export function PriceChart({ data, className, height = 480 }: PriceChartProps) {
       r.candles.createPriceLine({
         price: lv.price,
         title: lv.title,
-        color: lv.kind === 'support' ? palette.support : palette.resistance,
+        color: lv.kind === 'fib' ? palette.fib : lv.kind === 'support' ? palette.support : palette.resistance,
         lineWidth: 1,
         lineStyle: LineStyle.LargeDashed,
         axisLabelVisible: true,

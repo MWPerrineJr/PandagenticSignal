@@ -9,7 +9,9 @@ import numpy as np
 import pandas as pd
 from scipy.signal import argrelextrema
 
-Kind = Literal["support", "resistance"]
+Kind = Literal["support", "resistance", "fib"]
+
+FIB_RATIOS: tuple[float, ...] = (0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0)
 
 
 @dataclass(frozen=True)
@@ -17,6 +19,8 @@ class Level:
     price: float
     touches: int
     kind: Kind
+    #: Ratio label ("61.8%") for fib levels; unused for support/resistance.
+    label: str | None = None
 
 
 def _extrema_prices(df: pd.DataFrame, order: int) -> np.ndarray:
@@ -72,4 +76,29 @@ def support_resistance(
             kind="resistance" if price > last_close else "support",
         )
         for price, count in clusters[:max_levels]
+    ]
+
+
+def fib_retracement(df: pd.DataFrame, *, ratios: tuple[float, ...] = FIB_RATIOS) -> list[Level]:
+    """Fibonacci retracement levels between the swing high and low of the shown range.
+
+    Auto-anchored (no hand-drawn trendline): whichever swing came first is the 100% end and the
+    other the 0% end, matching how charting platforms draw a retracement without user input.
+    """
+    if df.empty:
+        return []
+    high_idx, low_idx = df["High"].idxmax(), df["Low"].idxmin()
+    high, low = float(df["High"].loc[high_idx]), float(df["Low"].loc[low_idx])
+    if high <= low:
+        return []
+    span = high - low
+    uptrend = df.index.get_loc(high_idx) > df.index.get_loc(low_idx)
+    return [
+        Level(
+            price=round(high - ratio * span if uptrend else low + ratio * span, 4),
+            touches=0,
+            kind="fib",
+            label=f"{ratio * 100:g}%",
+        )
+        for ratio in ratios
     ]

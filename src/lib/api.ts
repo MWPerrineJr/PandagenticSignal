@@ -110,7 +110,8 @@ export const indicatorsSchema = historySchema.extend({
     z.object({
       price: z.number(),
       touches: z.number().int(),
-      kind: z.enum(['support', 'resistance']),
+      kind: z.enum(['support', 'resistance', 'fib']),
+      label: z.string().nullish(),
     }),
   ),
 })

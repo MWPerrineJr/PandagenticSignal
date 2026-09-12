@@ -285,10 +285,10 @@ def test_roc_hand_values(closes: pd.Series) -> None:
 # -- registry ---------------------------------------------------------------------------------
 
 
-def test_registry_has_the_twenty() -> None:
-    assert len(REGISTRY) == 20
+def test_registry_has_the_twenty_one() -> None:
+    assert len(REGISTRY) == 21
     kinds = [s.kind for s in REGISTRY.values()]
-    assert kinds.count("overlay") == 10 and kinds.count("pane") == 10
+    assert kinds.count("overlay") == 11 and kinds.count("pane") == 10
     assert set(DEFAULT_TOKENS) <= {ind.parse_token(t).token for t in DEFAULT_TOKENS}
 
 

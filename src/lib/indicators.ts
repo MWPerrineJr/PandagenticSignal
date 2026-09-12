@@ -25,6 +25,7 @@ export const SHORT_NAMES: Record<string, string> = {
   keltner: 'Keltner',
   donchian: 'Donchian',
   sr: 'S/R',
+  fib: 'Fib',
   pivot: 'Pivots',
   rsi: 'RSI',
   macd: 'MACD',
@@ -129,7 +130,7 @@ export function tokenLabel(token: string): string {
 }
 
 /** Overlay ids, for callers that have not loaded the catalog yet (mirrors the API registry). */
-const OVERLAY_IDS: ReadonlySet<string> = new Set(['sma', 'ema', 'bb', 'vwap', 'psar', 'ichimoku', 'keltner', 'donchian', 'sr', 'pivot'])
+const OVERLAY_IDS: ReadonlySet<string> = new Set(['sma', 'ema', 'bb', 'vwap', 'psar', 'ichimoku', 'keltner', 'donchian', 'sr', 'fib', 'pivot'])
 
 export function isOverlayToken(token: string, catalog: IndicatorCatalog | undefined): boolean {
   const spec = specOf(token, catalog)

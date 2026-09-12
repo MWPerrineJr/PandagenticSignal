@@ -88,7 +88,7 @@ export function toLevelLines(levels: Level[]): LevelLine[] {
   return levels.map((lv) => ({
     price: lv.price,
     kind: lv.kind,
-    title: `${lv.kind === 'support' ? 'S' : 'R'} ×${lv.touches}`,
+    title: lv.kind === 'fib' ? `Fib ${lv.label}` : `${lv.kind === 'support' ? 'S' : 'R'} ×${lv.touches}`,
   }))
 }
 

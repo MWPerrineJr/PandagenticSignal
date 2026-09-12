@@ -418,6 +418,17 @@ REGISTRY: dict[str, IndicatorSpec] = {
             None,
         ),
         IndicatorSpec(
+            "fib",
+            "Fibonacci retracement",
+            "overlay",
+            (),
+            "Horizontal levels at the standard Fibonacci ratios between the period's swing high "
+            "and low, auto-anchored to whichever extreme came first.",
+            "level = high − ratio·(high−low) [uptrend] or low + ratio·(high−low) [downtrend], "
+            "ratio ∈ {0, 23.6, 38.2, 50, 61.8, 78.6, 100}%",
+            None,
+        ),
+        IndicatorSpec(
             "pivot",
             "Pivot points",
             "overlay",

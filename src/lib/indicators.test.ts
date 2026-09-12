@@ -14,8 +14,8 @@ import {
 } from './indicators'
 
 describe('indicator tokens', () => {
-  it('the catalog fixture carries the twenty and the API defaults', () => {
-    expect(catalog.indicators).toHaveLength(20)
+  it('the catalog fixture carries the twenty-one and the API defaults', () => {
+    expect(catalog.indicators).toHaveLength(21)
     expect(catalog.defaults).toEqual([...DEFAULT_TOKENS])
     expect(catalog.max_per_request).toBe(MAX_INDICATORS)
   })
