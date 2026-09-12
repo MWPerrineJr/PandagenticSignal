@@ -47,9 +47,19 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 const msg = (error: AuthError | null): string | null => (error ? error.message : null)
 
+async function stampAcceptance(userId: string) {
+  if (!supabase) return { error: 'Accounts are not configured.' }
+  const { error } = await supabase
+    .from('profiles')
+    .update({ disclosure_accepted_at: new Date().toISOString(), disclosure_version: DISCLAIMER_UPDATED })
+    .eq('id', userId)
+  return { error: error ? error.message : null }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [status, setStatus] = useState<AuthStatus>(isSupabaseConfigured ? 'loading' : 'disabled')
+  const [disclosureAccepted, setDisclosureAccepted] = useState<boolean | null>(null)
 
   useEffect(() => {
     if (!supabase) return
@@ -68,6 +78,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data.subscription.unsubscribe()
     }
   }, [])
+
+  const userId = session?.user.id ?? null
+  const userEmail = session?.user.email ?? null
+
+  // Load (and, for a freshly confirmed sign-up, complete) the disclosure acceptance.
+  useEffect(() => {
+    if (!supabase || !userId) {
+      setDisclosureAccepted(null)
+      return
+    }
+    let active = true
+    void (async () => {
+      const { data, error } = await supabase!
+        .from('profiles')
+        .select('disclosure_accepted_at')
+        .eq('id', userId)
+        .maybeSingle()
+      if (!active) return
+      if (error) {
+        // The column may not exist yet on an older database; never lock the visitor out for that.
+        setDisclosureAccepted(true)
+        return
+      }
+      const accepted = Boolean((data as { disclosure_accepted_at?: string | null } | null)?.disclosure_accepted_at)
+      if (accepted) {
+        setDisclosureAccepted(true)
+        writePendingAccept(null)
+        return
+      }
+      const pending = readPendingAccept()
+      if (pending && userEmail && pending === userEmail.toLowerCase()) {
+        await stampAcceptance(userId)
+        if (!active) return
+        writePendingAccept(null)
+        setDisclosureAccepted(true)
+        return
+      }
+      setDisclosureAccepted(false)
+    })()
+    return () => {
+      active = false
+    }
+  }, [userId, userEmail])
+
+  const acceptDisclosure = useCallback(async (): Promise<AuthResult> => {
+    if (!userId) return { error: 'Sign in first.' }
+    const result = await stampAcceptance(userId)
+    if (!result.error) setDisclosureAccepted(true)
+    return result
+  }, [userId])
 
   const signInWithPassword = useCallback(async (email: string, password: string): Promise<AuthResult> => {
     if (!supabase) return { error: 'Accounts are not configured.' }
