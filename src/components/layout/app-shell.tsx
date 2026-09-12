@@ -30,7 +30,7 @@ export function AppShell() {
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-4 px-4">
           <NavLink to={{ pathname: '/', search }} className="flex items-center gap-2 font-semibold">
             <ActivityIcon className="size-5" aria-hidden />
-            <span className="hidden sm:inline">Stock Analysis Tool</span>
+            <span className="hidden sm:inline">Pandagentic Signal</span>
           </NavLink>
           <nav aria-label="Primary" className="flex items-center gap-1">
             {NAV_ITEMS.map((item) => (

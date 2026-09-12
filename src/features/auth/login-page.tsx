@@ -137,7 +137,7 @@ export function LoginPage() {
     <div className="flex min-h-[calc(100svh-3.5rem)] flex-col items-center justify-center px-4 py-12">
       <div className="mb-6 flex items-center gap-2 text-2xl font-semibold tracking-tight">
         <ActivityIcon className="size-7 text-primary" aria-hidden />
-        <span>Stock Analysis Tool</span>
+        <span>Pandagentic Signal</span>
       </div>
       <Card className="w-full max-w-md">
         <CardHeader>
