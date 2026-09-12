@@ -34,10 +34,13 @@ export interface AuthContextValue {
   user: User | null
   session: Session | null
   signInWithPassword: (email: string, password: string) => Promise<AuthResult>
-  signUp: (email: string, password: string) => Promise<AuthResult & { needsConfirmation: boolean }>
+  signUp: (email: string, password: string, acceptedDisclosure: boolean) => Promise<AuthResult & { needsConfirmation: boolean }>
   signInWithOtp: (email: string) => Promise<AuthResult>
   signInWithGoogle: (from: string) => Promise<AuthResult>
   signOut: () => Promise<void>
+  /** null while unknown (loading, signed out, or accounts disabled). */
+  disclosureAccepted: boolean | null
+  acceptDisclosure: () => Promise<AuthResult>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
