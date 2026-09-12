@@ -13,7 +13,7 @@ export function UserMenu() {
       <Link
         to="/login"
         state={{ from: location.pathname + location.search }}
-        className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
+        className={cn(buttonVariants({ variant: 'default', size: 'sm' }))}
       >
         <UserIcon /> Sign in
       </Link>
