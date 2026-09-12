@@ -135,10 +135,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: msg(error) }
   }, [])
 
-  const signUp = useCallback(async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string, acceptedDisclosure: boolean) => {
     if (!supabase) return { error: 'Accounts are not configured.', needsConfirmation: false }
+    if (!acceptedDisclosure) return { error: 'Please confirm the disclosure to create an account.', needsConfirmation: false }
     const { data, error } = await supabase.auth.signUp({ email, password })
-    return { error: msg(error), needsConfirmation: !error && !data.session }
+    if (error) return { error: msg(error), needsConfirmation: false }
+    if (data.session?.user) {
+      await stampAcceptance(data.session.user.id)
+      setDisclosureAccepted(true)
+      writePendingAccept(null)
+    } else {
+      // Email confirmation pending: remember the acceptance and stamp it at first sign-in.
+      writePendingAccept(email)
+    }
+    return { error: null, needsConfirmation: !data.session }
   }, [])
 
   const signInWithOtp = useCallback(async (email: string): Promise<AuthResult> => {
@@ -173,8 +183,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, session, user: session?.user ?? null, signInWithPassword, signUp, signInWithOtp, signInWithGoogle, signOut }),
-    [status, session, signInWithPassword, signUp, signInWithOtp, signInWithGoogle, signOut],
+    () => ({
+      status,
+      session,
+      user: session?.user ?? null,
+      signInWithPassword,
+      signUp,
+      signInWithOtp,
+      signInWithGoogle,
+      signOut,
+      disclosureAccepted,
+      acceptDisclosure,
+    }),
+    [
+      status,
+      session,
+      signInWithPassword,
+      signUp,
+      signInWithOtp,
+      signInWithGoogle,
+      signOut,
+      disclosureAccepted,
+      acceptDisclosure,
+    ],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
