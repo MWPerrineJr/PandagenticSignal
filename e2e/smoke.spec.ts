@@ -13,7 +13,7 @@ async function pickSymbol(page: Page, query: string, symbol: string) {
 
 test.describe('smoke (live data, signed out)', () => {
   test('search → dashboard quote → chart overlays → watchlist → analysts', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/dashboard')
     await expect(page.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeVisible()
 
     // Search "apple" and select AAPL; the dashboard quote widget fills in.
@@ -165,8 +165,8 @@ test.describe('smoke (live data, signed out)', () => {
   })
 
   test('unknown symbol shows a friendly error, not a crash', async ({ page }) => {
-    await page.goto('/?t=ZZZZNOTREAL')
-    await expect(page.getByRole('alert').filter({ hasText: /no data for ZZZZNOTREAL/i })).toBeVisible()
+    await page.goto('/dashboard?t=ZZZZNOTREAL')
+    await expect(page.getByRole('region', { name: 'Quote' }).getByRole('alert').filter({ hasText: /no data for ZZZZNOTREAL/i })).toBeVisible()
     await page.getByRole('link', { name: 'Charts' }).click()
     await expect(page.getByRole('alert').filter({ hasText: /no price history/i })).toBeVisible()
   })
